@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 
+import { assertIosLcov } from './assert-coverage';
 import type { CoverageConfig, SourcePathRewriteRule } from './config';
 import { DEFAULT_COVERAGE_CONFIG } from './config';
+import { EXIT_OK, EXIT_STRICT_EMPTY, StrictEmptyError } from './exit-codes';
 import { normalizeSourcePath } from './path-rewrite';
 
 export type IosExportOptions = {
@@ -15,6 +17,20 @@ export type IosExportOptions = {
   config?: CoverageConfig;
   /** When true, delete processed `.profraw` files after a successful export. */
   deleteProfraw?: boolean;
+  /**
+   * When true (default), run LCOV presence assert after export.
+   * Soft mode (`config.strict === false`) warns; strict throws for CLI exit 2.
+   */
+  assertAfterExport?: boolean;
+};
+
+export type IosCoverageContext = {
+  productsDir: string;
+  appBinary: string;
+  coverageObjects: string[];
+  profrawFiles: string[];
+  profileDataDir: string;
+  simulatorCoverageDir: string;
 };
 
 export function walkFiles(
@@ -61,7 +77,9 @@ export function collectCoverageObjects(
   addObject(path.join(productsDir, `${appName}.app`, appName));
 
   const matchesPrefix = (name: string) =>
-    frameworkNamePrefixes.some((prefix) => name.startsWith(prefix));
+    frameworkNamePrefixes.length === 0
+      ? false
+      : frameworkNamePrefixes.some((prefix) => name.startsWith(prefix));
 
   const embeddedFrameworksDir = path.join(
     productsDir,
@@ -96,6 +114,44 @@ export function collectCoverageObjects(
   }
 
   return objects;
+}
+
+export function resolveIosCoverageContext(
+  derivedData: string,
+  configuration: string,
+  appName: string,
+  frameworkNamePrefixes: string[] = []
+): IosCoverageContext {
+  const productsDir = path.join(
+    derivedData,
+    'Build/Products',
+    `${configuration}-iphonesimulator`
+  );
+  const appBinary = path.join(productsDir, `${appName}.app`, appName);
+  const profileDataDir = path.join(derivedData, 'Build/ProfileData');
+  const simulatorCoverageDir = path.join(derivedData, 'output/coverage');
+
+  const profrawFiles = [
+    ...walkFiles(simulatorCoverageDir, (filePath) =>
+      filePath.endsWith('.profraw')
+    ),
+    ...walkFiles(profileDataDir, (filePath) => filePath.endsWith('.profraw')),
+  ];
+
+  const coverageObjects = collectCoverageObjects(
+    productsDir,
+    appName,
+    frameworkNamePrefixes
+  );
+
+  return {
+    productsDir,
+    appBinary,
+    coverageObjects,
+    profrawFiles,
+    profileDataDir,
+    simulatorCoverageDir,
+  };
 }
 
 export async function rewriteLcovFile(
@@ -161,54 +217,43 @@ function runToFileOrThrow(
   }
 }
 
+function buildObjectArgs(coverageObjects: string[]): string[] {
+  const args: string[] = [];
+  for (const objectPath of coverageObjects) {
+    args.push('-object', objectPath);
+  }
+  return args;
+}
+
 /**
- * Merge profraw → profdata → LCOV with path rewrite.
- * Ported from RNFB process-ios-native-coverage.js with config-driven prefixes/rewrite.
+ * Merge profraw → profdata → LCOV with path rewrite + optional presence assert.
  */
 export async function exportIosLcov(
   options: IosExportOptions
 ): Promise<string> {
   const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
-  const productsDir = path.join(
+  const ctx = resolveIosCoverageContext(
     options.derivedData,
-    'Build/Products',
-    `${options.configuration}-iphonesimulator`
-  );
-  const appBinary = path.join(
-    productsDir,
-    `${options.appName}.app`,
-    options.appName
-  );
-  const profileDataDir = path.join(options.derivedData, 'Build/ProfileData');
-  const simulatorCoverageDir = path.join(
-    options.derivedData,
-    'output/coverage'
-  );
-
-  const profrawFiles = [
-    ...walkFiles(simulatorCoverageDir, (filePath) =>
-      filePath.endsWith('.profraw')
-    ),
-    ...walkFiles(profileDataDir, (filePath) => filePath.endsWith('.profraw')),
-  ];
-
-  if (profrawFiles.length === 0) {
-    throw new Error(
-      `No .profraw files under ${simulatorCoverageDir} or ${profileDataDir}.`
-    );
-  }
-
-  if (!fs.existsSync(appBinary)) {
-    throw new Error(`App binary not found at ${appBinary}`);
-  }
-
-  const coverageObjects = collectCoverageObjects(
-    productsDir,
+    options.configuration,
     options.appName,
     config.ios.frameworkNamePrefixes
   );
-  if (coverageObjects.length === 0) {
-    throw new Error(`No coverage objects found under ${productsDir}`);
+
+  if (ctx.profrawFiles.length === 0) {
+    const message = `No .profraw files under ${ctx.simulatorCoverageDir} or ${ctx.profileDataDir}.`;
+    if (config.strict) {
+      throw new StrictEmptyError(message);
+    }
+    console.warn(`[rn-coverage] ${message} (soft; continuing)`);
+    return options.output;
+  }
+
+  if (!fs.existsSync(ctx.appBinary)) {
+    throw new Error(`App binary not found at ${ctx.appBinary}`);
+  }
+
+  if (ctx.coverageObjects.length === 0) {
+    throw new Error(`No coverage objects found under ${ctx.productsDir}`);
   }
 
   fs.mkdirSync(path.dirname(options.output), { recursive: true });
@@ -218,18 +263,21 @@ export async function exportIosLcov(
     'llvm-profdata',
     'merge',
     '-sparse',
-    ...profrawFiles,
+    ...ctx.profrawFiles,
     '-o',
     profdataPath,
   ]);
 
   const rawLcovPath = path.join(path.dirname(options.output), 'lcov.raw');
   try {
-    const exportArgs = ['llvm-cov', 'export', '-instr-profile', profdataPath];
-    coverageObjects.forEach((objectPath) => {
-      exportArgs.push('-object', objectPath);
-    });
-    exportArgs.push('-format=lcov');
+    const exportArgs = [
+      'llvm-cov',
+      'export',
+      '-instr-profile',
+      profdataPath,
+      ...buildObjectArgs(ctx.coverageObjects),
+      '-format=lcov',
+    ];
     runToFileOrThrow('xcrun', exportArgs, rawLcovPath);
 
     const { sourceFileCount } = await rewriteLcovFile(
@@ -242,8 +290,20 @@ export async function exportIosLcov(
       `[rn-coverage] Wrote ${options.output} (${sourceFileCount} source file(s))`
     );
 
+    const shouldAssert = options.assertAfterExport ?? true;
+    if (shouldAssert) {
+      const result = assertIosLcov(options.output, config.strict, config);
+      if (result.code === EXIT_OK) {
+        console.log(`[rn-coverage] ${result.message}`);
+      } else if (result.code === EXIT_STRICT_EMPTY) {
+        throw new StrictEmptyError(result.message);
+      } else {
+        console.warn(`[rn-coverage] ${result.message}`);
+      }
+    }
+
     if (options.deleteProfraw !== false) {
-      profrawFiles.forEach((profrawPath) => {
+      ctx.profrawFiles.forEach((profrawPath) => {
         fs.rmSync(profrawPath, { force: true });
       });
     }
@@ -252,4 +312,110 @@ export async function exportIosLcov(
   }
 
   return options.output;
+}
+
+export type IosReportOptions = {
+  derivedData: string;
+  configuration?: string;
+  appName?: string;
+  profdata?: string;
+  outputDir?: string;
+  config?: CoverageConfig;
+};
+
+/**
+ * HTML report via `llvm-cov show -format=html`.
+ */
+export function reportIosHtml(options: IosReportOptions): string {
+  const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
+  const configuration = options.configuration ?? 'Debug';
+  const appName = options.appName ?? config.app.iosProductName;
+  const ctx = resolveIosCoverageContext(
+    options.derivedData,
+    configuration,
+    appName,
+    config.ios.frameworkNamePrefixes
+  );
+
+  const profdataPath =
+    options.profdata ?? path.resolve(process.cwd(), 'coverage/ios/profdata');
+  const outputDir =
+    options.outputDir ?? path.resolve(process.cwd(), 'coverage/ios/html');
+
+  if (!fs.existsSync(profdataPath)) {
+    const message = `profdata not found at ${profdataPath} (run ios export first)`;
+    if (config.strict) {
+      throw new StrictEmptyError(message);
+    }
+    console.warn(`[rn-coverage] ${message}`);
+    return outputDir;
+  }
+
+  if (ctx.coverageObjects.length === 0) {
+    throw new Error(`No coverage objects found under ${ctx.productsDir}`);
+  }
+
+  fs.mkdirSync(outputDir, { recursive: true });
+  runOrThrow('xcrun', [
+    'llvm-cov',
+    'show',
+    '-format=html',
+    `-output-dir=${outputDir}`,
+    '-instr-profile',
+    profdataPath,
+    ...buildObjectArgs(ctx.coverageObjects),
+  ]);
+
+  console.log(`[rn-coverage] Wrote HTML report to ${outputDir}`);
+  return outputDir;
+}
+
+export type IosSummaryOptions = {
+  derivedData: string;
+  configuration?: string;
+  appName?: string;
+  profdata?: string;
+  config?: CoverageConfig;
+};
+
+/**
+ * Terminal summary via `llvm-cov report`.
+ */
+export function summarizeIos(options: IosSummaryOptions): string {
+  const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
+  const configuration = options.configuration ?? 'Debug';
+  const appName = options.appName ?? config.app.iosProductName;
+  const ctx = resolveIosCoverageContext(
+    options.derivedData,
+    configuration,
+    appName,
+    config.ios.frameworkNamePrefixes
+  );
+
+  const profdataPath =
+    options.profdata ?? path.resolve(process.cwd(), 'coverage/ios/profdata');
+
+  if (!fs.existsSync(profdataPath)) {
+    const message = `profdata not found at ${profdataPath} (run ios export first)`;
+    if (config.strict) {
+      throw new StrictEmptyError(message);
+    }
+    console.warn(`[rn-coverage] ${message}`);
+    return '';
+  }
+
+  if (ctx.coverageObjects.length === 0) {
+    throw new Error(`No coverage objects found under ${ctx.productsDir}`);
+  }
+
+  const report = runOrThrow('xcrun', [
+    'llvm-cov',
+    'report',
+    '-instr-profile',
+    profdataPath,
+    ...buildObjectArgs(ctx.coverageObjects),
+  ]);
+
+  console.log(report);
+  return report;
 }

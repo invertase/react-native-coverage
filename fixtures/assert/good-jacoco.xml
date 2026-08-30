@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="jacocoTestReport">
+  <package name="com.example.lib.core">
+    <class name="com/example/lib/core/Foo" sourcefilename="Foo.java"/>
+    <counter type="INSTRUCTION" missed="2" covered="8"/>
+    <counter type="LINE" missed="1" covered="4"/>
+  </package>
+  <package name="com.other.app">
+    <counter type="INSTRUCTION" missed="10" covered="0"/>
+    <counter type="LINE" missed="5" covered="0"/>
+  </package>
+  <counter type="LINE" missed="6" covered="4"/>
+</report>

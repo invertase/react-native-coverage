@@ -2,8 +2,10 @@ import { execSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { assertAndroidJacoco } from './assert-coverage';
 import type { CoverageConfig } from './config';
 import { DEFAULT_COVERAGE_CONFIG } from './config';
+import { EXIT_OK, EXIT_STRICT_EMPTY, StrictEmptyError } from './exit-codes';
 
 export type PullOptions = {
   softFail?: boolean;
@@ -102,10 +104,10 @@ export async function pullAndroidCoverageWithRetry(
   deviceId: string,
   options: PullOptions & { retries?: number; intervalMs?: number } = {}
 ): Promise<string | null> {
-  const softFail = options.softFail ?? true;
+  const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
+  const softFail = options.softFail ?? !config.strict;
   const retries = options.retries ?? 15;
   const intervalMs = options.intervalMs ?? 2000;
-  const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     if (androidCoverageFileExists(deviceId, config)) {
@@ -133,7 +135,7 @@ export async function pullAndroidCoverageWithRetry(
     console.warn(`[rn-coverage] ${message}`);
     return null;
   }
-  throw new Error(message);
+  throw new StrictEmptyError(message);
 }
 
 /**
@@ -145,48 +147,82 @@ export function pullIosCoverage(
   options: PullOptions = {}
 ): string[] {
   const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
+  const softFail = options.softFail ?? !config.strict;
   const localDestDir =
     options.outputDir ?? path.resolve(process.cwd(), 'coverage/ios');
   const bundleId = config.app.iosBundleId;
 
-  const container = execSync(
-    `xcrun simctl get_app_container ${deviceId} ${bundleId} data`,
-    { encoding: 'utf8' }
-  ).trim();
-  fs.mkdirSync(localDestDir, { recursive: true });
+  try {
+    const container = execSync(
+      `xcrun simctl get_app_container ${deviceId} ${bundleId} data`,
+      { encoding: 'utf8' }
+    ).trim();
+    fs.mkdirSync(localDestDir, { recursive: true });
 
-  const profrawList = execSync(
-    `find "${container}" \\( -path "*/Documents/coverage.profraw" -o -path "*/tmp/coverage.profraw" -o -name '*.profraw' \\)`,
-    { encoding: 'utf8' }
-  )
-    .trim()
-    .split('\n')
-    .filter(Boolean);
+    const profrawList = execSync(
+      `find "${container}" \\( -path "*/Documents/coverage.profraw" -o -path "*/tmp/coverage.profraw" -o -name '*.profraw' \\)`,
+      { encoding: 'utf8' }
+    )
+      .trim()
+      .split('\n')
+      .filter(Boolean);
 
-  if (profrawList.length === 0) {
-    throw new Error(`No iOS coverage profraw files found under ${container}`);
+    if (profrawList.length === 0) {
+      const message = `No iOS coverage profraw files found under ${container}`;
+      if (softFail) {
+        console.warn(`[rn-coverage] ${message}`);
+        return [];
+      }
+      throw new StrictEmptyError(message);
+    }
+
+    const destPaths = profrawList.map((src, index) => {
+      const suffix = profrawList.length > 1 ? `_${index}` : '';
+      const dest = path.join(
+        localDestDir,
+        `simulator_coverage${suffix}.profraw`
+      );
+      execSync(`cp "${src}" "${dest}"`);
+      return dest;
+    });
+
+    console.log(
+      `Coverage data downloaded to: ${localDestDir} (${profrawList.length} profraw file(s))`
+    );
+    return destPaths;
+  } catch (error) {
+    if (error instanceof StrictEmptyError) {
+      throw error;
+    }
+    const message = `iOS native coverage pull failed: ${(error as Error).message}`;
+    if (softFail) {
+      console.warn(`[rn-coverage] ${message}`);
+      return [];
+    }
+    throw new Error(message);
   }
-
-  const destPaths = profrawList.map((src, index) => {
-    const suffix = profrawList.length > 1 ? `_${index}` : '';
-    const dest = path.join(localDestDir, `simulator_coverage${suffix}.profraw`);
-    execSync(`cp "${src}" "${dest}"`);
-    return dest;
-  });
-
-  console.log(
-    `Coverage data downloaded to: ${localDestDir} (${profrawList.length} profraw file(s))`
-  );
-  return destPaths;
 }
 
+export type AndroidReportOptions = {
+  androidDir?: string;
+  jacocoXml?: string;
+  config?: CoverageConfig;
+  /** When true (default), assert Jacoco XML after a successful Gradle report. */
+  assertAfterReport?: boolean;
+};
+
 /**
- * Run a consumer Jacoco report Gradle task.
- * TODO: resolve gradle project from config instead of cwd guess.
+ * Run a consumer Jacoco report Gradle task, then optionally assert LINE hits.
  */
 export function runJacocoTestReport(
-  androidDir: string = path.resolve(process.cwd(), 'android')
-): boolean {
+  options: AndroidReportOptions | string = {}
+): { ok: boolean; exitCode: number } {
+  const normalized: AndroidReportOptions =
+    typeof options === 'string' ? { androidDir: options } : options;
+  const config = normalized.config ?? DEFAULT_COVERAGE_CONFIG;
+  const androidDir =
+    normalized.androidDir ?? path.resolve(process.cwd(), 'android');
+
   const result = spawnSync('./gradlew', ['jacocoTestReport'], {
     cwd: androidDir,
     stdio: 'inherit',
@@ -197,8 +233,26 @@ export function runJacocoTestReport(
     console.warn(
       `[rn-coverage] jacocoTestReport exited with status ${result.status ?? 'unknown'}`
     );
-    return false;
+    return { ok: false, exitCode: result.status ?? 1 };
   }
 
-  return true;
+  const shouldAssert = normalized.assertAfterReport ?? true;
+  if (!shouldAssert) {
+    return { ok: true, exitCode: EXIT_OK };
+  }
+
+  const jacocoXml =
+    normalized.jacocoXml ??
+    path.resolve(process.cwd(), config.android.jacocoReportXml);
+  const assertResult = assertAndroidJacoco(jacocoXml, config.strict, config);
+  if (assertResult.code === EXIT_OK) {
+    console.log(`[rn-coverage] ${assertResult.message}`);
+    return { ok: true, exitCode: EXIT_OK };
+  }
+  if (assertResult.code === EXIT_STRICT_EMPTY) {
+    console.error(`[rn-coverage] ${assertResult.message}`);
+    return { ok: false, exitCode: EXIT_STRICT_EMPTY };
+  }
+  console.warn(`[rn-coverage] ${assertResult.message}`);
+  return { ok: true, exitCode: EXIT_OK };
 }

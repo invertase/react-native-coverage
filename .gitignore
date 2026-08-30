@@ -88,3 +88,7 @@ android/generated
 
 # React Native Nitro Modules
 nitrogen/
+
+# Keep export CLI fixtures (path contains Build/ which is otherwise ignored)
+!fixtures/export-layout/
+!fixtures/export-layout/**

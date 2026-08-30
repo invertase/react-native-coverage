@@ -25,6 +25,23 @@ export type SourcePathRewriteRule =
       replacement: string;
     };
 
+export type CoverageAssertConfig = {
+  /**
+   * Substrings that must appear in ≥1 LCOV `SF:` path.
+   * Empty → any SF: path counts. Default `packages/` matches common monorepos.
+   */
+  lcovPathIncludes: string[];
+  /**
+   * Case-insensitive substrings matching Jacoco `<package name="">`.
+   * Empty falls back to `android.libraryProjectMatchers`, then any package.
+   */
+  jacocoPackageIncludes: string[];
+  /** Default relative path for `rn-coverage assert --lcov`. */
+  defaultLcovPath: string;
+  /** Default relative path for `rn-coverage assert --jacoco-xml`. */
+  defaultJacocoXmlPath: string;
+};
+
 export type CoverageConfig = {
   /** TurboModule / NativeModules name. Default: `Coverage`. */
   nativeModuleName: string;
@@ -42,15 +59,18 @@ export type CoverageConfig = {
     /** Optional staging path used by some e2e runners (e.g. Detox). */
     detoxStagingPath: string;
     coverageRelativePath: string;
+    /** Relative path to jacocoTestReport.xml after `android report`. */
+    jacocoReportXml: string;
   };
   /** Rules applied left-to-right to LCOV `SF:` paths. */
   sourcePathRewrite: SourcePathRewriteRule[];
   /**
-   * When true (recommended in CI), pull/export/report exit 2 if expected
-   * hits/artifacts are empty. Optional `rn-coverage assert` is a dedicated
-   * post-pipeline check with the same semantics (full UX in a later item).
+   * When true (recommended in CI), pull/export/report/assert exit 2 if
+   * expected hits/artifacts are empty.
    */
   strict: boolean;
+  /** Presence-guard matchers and default artifact paths. */
+  assert: CoverageAssertConfig;
 };
 
 export const DEFAULT_COVERAGE_CONFIG: CoverageConfig = {
@@ -67,9 +87,18 @@ export const DEFAULT_COVERAGE_CONFIG: CoverageConfig = {
     libraryProjectMatchers: [],
     detoxStagingPath: '/data/local/tmp/coverage/coverage.ec',
     coverageRelativePath: 'files/coverage.ec',
+    jacocoReportXml:
+      'android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml',
   },
   sourcePathRewrite: [],
   strict: true,
+  assert: {
+    lcovPathIncludes: ['packages/'],
+    jacocoPackageIncludes: [],
+    defaultLcovPath: 'coverage/ios/lcov.info',
+    defaultJacocoXmlPath:
+      'android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml',
+  },
 };
 
 export type CoverageConfigInput = {
@@ -79,6 +108,7 @@ export type CoverageConfigInput = {
   android?: Partial<CoverageConfig['android']>;
   sourcePathRewrite?: SourcePathRewriteRule[];
   strict?: boolean;
+  assert?: Partial<CoverageAssertConfig>;
 };
 
 export function resolveCoverageConfig(
@@ -102,6 +132,10 @@ export function resolveCoverageConfig(
     sourcePathRewrite:
       input.sourcePathRewrite ?? DEFAULT_COVERAGE_CONFIG.sourcePathRewrite,
     strict: input.strict ?? DEFAULT_COVERAGE_CONFIG.strict,
+    assert: {
+      ...DEFAULT_COVERAGE_CONFIG.assert,
+      ...input.assert,
+    },
   };
 }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="jacocoTestReport">
+  <package name="com.example.lib.core">
+    <counter type="INSTRUCTION" missed="8" covered="0"/>
+    <counter type="LINE" missed="4" covered="0"/>
+  </package>
+</report>
