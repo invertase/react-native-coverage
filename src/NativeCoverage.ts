@@ -1,8 +1,7 @@
 import { TurboModuleRegistry, type TurboModule } from 'react-native';
 
 /**
- * TurboModule surface for native coverage flush.
- * Full Kotlin/ObjC++ flusher lands in a later queue item; this is an empty stub.
+ * TurboModule surface for native coverage flush (New Architecture only).
  */
 export interface Spec extends TurboModule {
   flush(): void;

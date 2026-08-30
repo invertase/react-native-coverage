@@ -1,0 +1,39 @@
+buildscript {
+  ext {
+    kotlinVersion = "2.0.21"
+    minSdkVersion = 24
+    compileSdkVersion = 36
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+  }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+apply plugin: "com.facebook.react"
+
+android {
+  namespace "com.coverage.fixture"
+  compileSdkVersion rootProject.ext.has("compileSdkVersion") ? rootProject.ext.compileSdkVersion : 36
+
+  defaultConfig {
+    minSdkVersion rootProject.ext.has("minSdkVersion") ? rootProject.ext.minSdkVersion : 24
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "coverage-fixture",
+  "version": "0.0.1",
+  "description": "Instrumented fixture native library for react-native-coverage example",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "private": true,
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "codegenConfig": {
+    "name": "CoverageFixtureSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.coverage.fixture"
+    }
+  }
+}

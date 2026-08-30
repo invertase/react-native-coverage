@@ -4175,6 +4175,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"coverage-fixture@workspace:*, coverage-fixture@workspace:example/fixture-lib":
+  version: 0.0.0-use.local
+  resolution: "coverage-fixture@workspace:example/fixture-lib"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  languageName: unknown
+  linkType: soft
+
 "create-jest@npm:^29.7.0":
   version: 29.7.0
   resolution: "create-jest@npm:29.7.0"
@@ -8350,6 +8359,7 @@ __metadata:
   resolution: "react-native-coverage-example@workspace:example"
   dependencies:
     "@types/react": "npm:~19.2.2"
+    coverage-fixture: "workspace:*"
     expo: "npm:~57.0.18"
     expo-status-bar: "npm:~57.0.1"
     react: "npm:19.2.3"

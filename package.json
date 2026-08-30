@@ -6,9 +6,13 @@
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
-      "react-native-coverage-source": "./src/index.tsx",
+      "react-native": "./src/index.tsx",
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
+    },
+    "./node": {
+      "types": "./lib/typescript/src/node.d.ts",
+      "default": "./lib/module/node.js"
     },
     "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
@@ -109,7 +113,8 @@
     }
   },
   "workspaces": [
-    "example"
+    "example",
+    "example/fixture-lib"
   ],
   "packageManager": "yarn@4.11.0",
   "react-native-builder-bob": {
