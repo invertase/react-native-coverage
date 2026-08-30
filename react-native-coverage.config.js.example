@@ -1,0 +1,36 @@
+/**
+ * Example consumer config — copy to react-native-coverage.config.js
+ * and adjust for your dedicated test app (Pattern C).
+ *
+ * Defaults are intentionally product-neutral.
+ */
+module.exports = {
+  nativeModuleName: 'Coverage',
+  app: {
+    androidApplicationId: 'com.example.coverage',
+    iosBundleId: 'com.example.coverage',
+    iosProductName: 'CoverageExample',
+  },
+  ios: {
+    // e.g. ['MyLib'] to include MyLib*.framework as llvm-cov objects
+    frameworkNamePrefixes: [],
+  },
+  android: {
+    libraryProjectMatchers: [],
+    detoxStagingPath: '/data/local/tmp/coverage/coverage.ec',
+    coverageRelativePath: 'files/coverage.ec',
+  },
+  sourcePathRewrite: [
+    { kind: 'after-marker', marker: '/packages/', includeMarker: true },
+    {
+      kind: 'regex',
+      pattern: '^.*/@example-scope/([^/]+)/(.+)$',
+      replacement: 'packages/$1/$2',
+    },
+  ],
+  /**
+   * Prefer true in CI: pull/export/report/assert exit 2 when expected
+   * hits or artifacts are empty.
+   */
+  strict: true,
+};

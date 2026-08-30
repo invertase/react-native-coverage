@@ -1,0 +1,22 @@
+{
+  "name": "react-native-coverage",
+  "description": "Native code coverage tooling for React Native test apps",
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": ["index", "pattern-c"]
+    },
+    {
+      "group": "Integration",
+      "pages": [
+        "integration/android",
+        "integration/ios",
+        "integration/e2e-timing"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": ["cli", "config"]
+    }
+  ]
+}

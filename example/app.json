@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "CoverageExample",
+    "slug": "react-native-coverage-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["react-native-coverage"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.coverage"
+    },
+    "android": {
+      "package": "com.example.coverage",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

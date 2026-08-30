@@ -1,0 +1,157 @@
+{
+  "name": "react-native-coverage",
+  "version": "0.1.0",
+  "description": "Native code coverage tooling for React Native (TurboModule + CLI + Expo config plugin)",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
+  "exports": {
+    ".": {
+      "react-native-coverage-source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "rn-coverage": "./bin/rn-coverage.js"
+  },
+  "files": [
+    "src",
+    "lib",
+    "android",
+    "ios",
+    "bin",
+    "plugin/build",
+    "app.plugin.js",
+    "cocoapods",
+    "docs",
+    "docs.json",
+    "react-native-coverage.config.js.example",
+    "*.podspec",
+    "react-native.config.js",
+    "!ios/build",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
+  ],
+  "scripts": {
+    "example": "yarn workspace react-native-coverage-example",
+    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib plugin/build",
+    "prepare": "bob build && yarn build:plugin",
+    "build:plugin": "tsc --project plugin/tsconfig.json",
+    "typecheck": "tsc",
+    "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "test": "jest"
+  },
+  "keywords": [
+    "react-native",
+    "coverage",
+    "jacoco",
+    "llvm",
+    "ios",
+    "android",
+    "turbo-module"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/invertase/react-native-coverage.git"
+  },
+  "author": "Invertase <oss@invertase.io> (https://invertase.io)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/invertase/react-native-coverage/issues"
+  },
+  "homepage": "https://github.com/invertase/react-native-coverage#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^2.1.0",
+    "@eslint/eslintrc": "^3.3.5",
+    "@eslint/js": "^9.39.4",
+    "@react-native/babel-preset": "0.86.3",
+    "@react-native/eslint-config": "0.86.3",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^19.2.0",
+    "del-cli": "^7.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-ft-flow": "^3.0.11",
+    "eslint-plugin-prettier": "^5.5.6",
+    "expo": "~57.0.18",
+    "jest": "^29.7.0",
+    "prettier": "^3.8.3",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-builder-bob": "^0.43.0",
+    "ts-jest": "^29.4.0",
+    "turbo": "^2.9.16",
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "expo": ">=52.0.0",
+    "react": "*",
+    "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
+  },
+  "workspaces": [
+    "example"
+  ],
+  "packageManager": "yarn@4.11.0",
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "codegenConfig": {
+    "name": "CoverageSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.coverage"
+    }
+  },
+  "prettier": {
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
+  "create-react-native-library": {
+    "type": "turbo-module",
+    "languages": "kotlin-objc",
+    "tools": [
+      "eslint",
+      "jest"
+    ],
+    "version": "0.63.0"
+  }
+}
