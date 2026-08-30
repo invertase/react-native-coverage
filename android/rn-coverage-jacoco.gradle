@@ -1,0 +1,132 @@
+/**
+ * react-native-coverage — app Jacoco report helper.
+ *
+ * Apply from the consumer app's `android/app/build.gradle` (Expo plugin does this):
+ *
+ *   apply from: <package>/android/rn-coverage-jacoco.gradle
+ *
+ * Expects rootProject.ext.coverageLibraryProjectMatchers (same list as
+ * rn-coverage.gradle). Creates:
+ * - jacocoTestReport — merge unit *.exec + e2e *.ec (Codecov-style)
+ * - jacocoUnitTestReport — unit only
+ * - jacocoAndroidTestReport — e2e *.ec only
+ *
+ * Nested Gradle/Groovy closures must not read unqualified script locals —
+ * they resolve against the Project and throw MissingPropertyException.
+ */
+
+apply plugin: 'jacoco'
+
+jacoco {
+  toolVersion = '0.8.14'
+}
+
+android {
+  jacoco {
+    version = '0.8.14'
+  }
+}
+
+tasks.withType(Test).configureEach { testTask ->
+  testTask.jacoco.includeNoLocationClasses = true
+  testTask.jacoco.excludes = ['jdk.internal.*']
+}
+
+ext.rnCoverageClassExcludes = [
+  '**/R.class',
+  '**/R$*.class',
+  '**/BuildConfig.*',
+  '**/Manifest*.*',
+  '**/*Test*.*',
+  'android/**/*.*',
+]
+
+def rnCoverageMatchers() {
+  return (rootProject.ext.has('coverageLibraryProjectMatchers')
+    ? rootProject.ext.coverageLibraryProjectMatchers
+    : []).collect { it.toString() }
+}
+
+def matchedLibraryProjects() {
+  def matchers = rnCoverageMatchers()
+  return rootProject.subprojects.findAll { proj ->
+    proj.plugins.hasPlugin('com.android.library') &&
+      matchers.any { matcher -> proj.name.contains(matcher) }
+  }
+}
+
+def coverageClassDirectories() {
+  def excludes = project.ext.rnCoverageClassExcludes
+  def trees = []
+  matchedLibraryProjects().each { proj ->
+    def javacDebug = file("${proj.projectDir}/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes")
+    def kotlinDebug = file("${proj.projectDir}/build/tmp/kotlin-classes/debug")
+    if (javacDebug.exists()) {
+      trees << fileTree(dir: javacDebug, excludes: excludes)
+    }
+    if (kotlinDebug.exists()) {
+      trees << fileTree(dir: kotlinDebug, excludes: excludes)
+    }
+  }
+  return files(trees)
+}
+
+def coverageSourceDirectories() {
+  def srcs = []
+  matchedLibraryProjects().each { proj ->
+    def javaSrc = file("${proj.projectDir}/src/main/java")
+    def kotlinSrc = file("${proj.projectDir}/src/main/kotlin")
+    if (javaSrc.exists()) {
+      srcs << javaSrc
+    }
+    if (kotlinSrc.exists()) {
+      srcs << kotlinSrc
+    }
+  }
+  return files(srcs)
+}
+
+def coverageExecutionData(List<String> includes) {
+  def trees = [fileTree(dir: project.buildDir, includes: includes)]
+  matchedLibraryProjects().each { proj ->
+    trees << fileTree(dir: proj.buildDir, includes: includes)
+  }
+  // Host-pulled Emma dumps commonly land under app/build/outputs/code_coverage
+  trees << fileTree(dir: "${project.buildDir}/outputs", includes: includes)
+  return files(trees)
+}
+
+def configureCoverageJacocoReport(JacocoReport reportTask) {
+  def htmlOutDir = layout.buildDirectory.dir("reports/jacoco/${reportTask.name}/html").get().asFile
+
+  reportTask.group = 'verification'
+  reportTask.reports {
+    xml.required = true
+    xml.outputLocation = layout.buildDirectory.file(
+      "reports/jacoco/${reportTask.name}/${reportTask.name}.xml"
+    )
+    html.required = true
+    html.outputLocation = htmlOutDir
+  }
+
+  reportTask.sourceDirectories.from = coverageSourceDirectories()
+  reportTask.classDirectories.from = coverageClassDirectories()
+}
+
+tasks.register('jacocoTestReport', JacocoReport) {
+  description = 'Merged Jacoco report (unit *.exec + e2e *.ec) for coverage library matchers'
+  configureCoverageJacocoReport(it)
+  executionData.from = coverageExecutionData(['**/*.exec', '**/*.ec'])
+}
+
+tasks.register('jacocoUnitTestReport', JacocoReport) {
+  description = 'Unit-only Jacoco report (*.exec)'
+  configureCoverageJacocoReport(it)
+  executionData.from = coverageExecutionData(['**/*.exec'])
+}
+
+tasks.register('jacocoAndroidTestReport', JacocoReport) {
+  description = 'E2e-only Jacoco report (*.ec from Emma flush / pull)'
+  configureCoverageJacocoReport(it)
+  executionData.from = coverageExecutionData(['**/*.ec'])
+}

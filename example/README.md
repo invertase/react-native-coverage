@@ -6,6 +6,32 @@ Dedicated Expo test harness for the library (Pattern C). Workspace dependency:
 "react-native-coverage": "*"
 ```
 
+## Enable coverage wiring
+
+`app.json` lists the config plugin with fixture matchers:
+
+```json
+[
+  "react-native-coverage",
+  {
+    "frameworkNamePrefixes": ["CoverageFixture"],
+    "libraryProjectMatchers": ["coverage-fixture", "react-native-coverage"],
+    "forceDynamicFrameworks": false,
+    "enableAndroidCoverage": true
+  }
+]
+```
+
+`yarn prebuild` then applies **all three** production paths:
+
+| Path | What gets applied |
+|------|-------------------|
+| Expo config plugin | `ios.useFrameworks=dynamic`, Android `testCoverageEnabled`, Gradle `apply from`, Podfile `require` + helper call |
+| CocoaPods Ruby helper | LLVM flags + `CoverageConfig.h` regen; optional dynamic-framework restore (off under Expo) |
+| Gradle Jacoco helpers | `android/rn-coverage.gradle` (library instrumentation) + `android/rn-coverage-jacoco.gradle` (report tasks) |
+
+> Expo keeps React-Core static, so `forceDynamicFrameworks` must stay **false** here (CocoaPods rejects dynamic Coverage* pods that depend on static React). Multi-image LINKEDIT with distinct `.framework` images remains for bare RN / RNFB dynamic hosts.
+
 ## Scripts
 
 ```sh

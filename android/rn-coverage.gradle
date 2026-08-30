@@ -1,0 +1,68 @@
+/**
+ * react-native-coverage — root Android instrumentation helper.
+ *
+ * Apply from the consumer app's `android/build.gradle` (Expo plugin does this):
+ *
+ *   ext.coverageLibraryProjectMatchers = ['coverage-fixture', 'my-lib']
+ *   apply from: new File([
+ *     "node", "--print",
+ *     "require.resolve('react-native-coverage/package.json')"
+ *   ].execute(null, rootDir).text.trim()).getParentFile(),
+ *     "android/rn-coverage.gradle")
+ *
+ * For each Android library subproject whose name contains a matcher:
+ * - apply Jacoco 0.8.14
+ * - enableAndroidTestCoverage on debug (Emma on-device .ec)
+ * - keep enableUnitTestCoverage false (AGP library unit probes are empty)
+ */
+
+def coverageMatchers = (rootProject.ext.has('coverageLibraryProjectMatchers')
+  ? rootProject.ext.coverageLibraryProjectMatchers
+  : []).collect { it.toString() }
+
+if (coverageMatchers.isEmpty()) {
+  logger.lifecycle('[react-native-coverage] rn-coverage.gradle: no coverageLibraryProjectMatchers; skipping library instrumentation')
+  return
+}
+
+logger.lifecycle("[react-native-coverage] instrumenting library projects matching ${coverageMatchers}")
+
+def configureCoverageLibrary = { Project subproject ->
+  if (!subproject.plugins.hasPlugin('com.android.library')) {
+    return
+  }
+  if (!coverageMatchers.any { matcher -> subproject.name.contains(matcher) }) {
+    return
+  }
+
+  subproject.pluginManager.apply('jacoco')
+  subproject.jacoco {
+    toolVersion = '0.8.14'
+  }
+  subproject.tasks.withType(Test).configureEach { testTask ->
+    testTask.jacoco.includeNoLocationClasses = true
+    testTask.jacoco.excludes = ['jdk.internal.*']
+  }
+
+  subproject.android {
+    buildTypes.debug {
+      enableAndroidTestCoverage = true
+      enableUnitTestCoverage = false
+    }
+    jacoco {
+      version = '0.8.14'
+    }
+  }
+
+  logger.lifecycle("[react-native-coverage] enabled Android test coverage on :${subproject.name}")
+}
+
+subprojects { subproject ->
+  if (subproject.state.executed) {
+    configureCoverageLibrary(subproject)
+  } else {
+    subproject.afterEvaluate {
+      configureCoverageLibrary(subproject)
+    }
+  }
+}

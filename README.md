@@ -2,10 +2,11 @@
 
 Native code coverage tooling for **dedicated React Native test apps** (Pattern C).
 
-- **TurboModule + codegen** (New Architecture only) — `flush()` stub today; full flusher later
+- **TurboModule + codegen** (New Architecture only) — iOS LINKEDIT flush + Android Emma dump
 - **CLI** (`rn-coverage`) — `android pull|report`, `ios pull|export|report|summary`, `assert`
-- **Expo config plugin** (optional) — Android + stable iOS app-target mods
-- **CocoaPods Ruby helper** — Pod LLVM flags via `require` + one call (safe split)
+- **Expo config plugin** (optional) — Android Gradle helpers + iOS dynamic frameworks + Podfile helper call
+- **CocoaPods Ruby helper** — Pod LLVM flags + dynamic-framework restore (`require` + one call; safe split)
+- **Gradle Jacoco helpers** — `android/rn-coverage.gradle` + `android/rn-coverage-jacoco.gradle`
 - **docs.page** — see `docs/`
 
 > Not for production product apps. Keep this package in your e2e/test harness workspace only.

@@ -12,7 +12,7 @@ module.exports = {
     frameworkNamePrefixes: ['CoverageFixture'],
   },
   android: {
-    libraryProjectMatchers: ['coverage-fixture', 'fixture'],
+    libraryProjectMatchers: ['coverage-fixture'],
     detoxStagingPath: '/data/local/tmp/coverage/coverage.ec',
     coverageRelativePath: 'files/coverage.ec',
     jacocoReportXml:

@@ -7,7 +7,20 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["react-native-coverage"],
+    "plugins": [
+      [
+        "react-native-coverage",
+        {
+          "frameworkNamePrefixes": ["CoverageFixture"],
+          "libraryProjectMatchers": [
+            "coverage-fixture",
+            "react-native-coverage"
+          ],
+          "forceDynamicFrameworks": false,
+          "enableAndroidCoverage": true
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.example.coverage"

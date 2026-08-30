@@ -7,7 +7,7 @@ This package is **New Architecture / TurboModule only**. It does not depend on `
 ## Quick links
 
 - [Pattern C](pattern-c.md) — dedicated test apps only
-- [Android integration](integration/android.md)
-- [iOS integration](integration/ios.md)
+- [Android integration](integration/android.md) — Gradle helpers + Expo plugin
+- [iOS integration](integration/ios.md) — Ruby helper + dynamic frameworks
 - [CLI](cli.md)
 - [Config](config.md)
