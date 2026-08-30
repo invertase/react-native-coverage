@@ -47,12 +47,16 @@
   ],
   "scripts": {
     "example": "yarn workspace react-native-coverage-example",
-    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib plugin/build",
+    "example:dynamic": "yarn workspace react-native-coverage-example-dynamic",
+    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build example-dynamic/ios/build lib plugin/build",
     "prepare": "bob build && yarn build:plugin",
     "build:plugin": "tsc --project plugin/tsconfig.json",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "test": "jest"
+    "test": "jest",
+    "e2e:ios:dynamic": "CELL=dynamic bash scripts/ci/run-ios-e2e-cell.sh",
+    "e2e:ios:static": "CELL=static bash scripts/ci/run-ios-e2e-cell.sh",
+    "e2e:android": "bash scripts/ci/run-android-e2e.sh"
   },
   "keywords": [
     "react-native",
@@ -114,7 +118,9 @@
   },
   "workspaces": [
     "example",
-    "example/fixture-lib"
+    "example/fixture-lib",
+    "example-dynamic",
+    "e2e"
   ],
   "packageManager": "yarn@4.11.0",
   "react-native-builder-bob": {

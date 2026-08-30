@@ -24,6 +24,16 @@
 
 Keep `forceDynamicFrameworks` **false** under Expo (React-Core is force-static). Set **true** only on bare RN / RNFB hosts that build React as dynamic frameworks.
 
+## CI cells (honest matrix)
+
+| Cell | App | Linkage | Gate |
+|------|-----|---------|------|
+| **iOS dynamic (primary)** | `example-dynamic/` bare RN | `use_frameworks! :linkage => :dynamic` | Non-zero fixture LCOV **and** `CoverageFixture.framework` is a dylib |
+| **iOS static** | `example/` Expo | staticlib merge into app / `.debug.dylib` | Non-zero fixture LCOV |
+| **Android** | `example/` Expo | Jacoco-instrumented libraries | Non-zero fixture package LINE hits |
+
+Appium (WebDriverIO) drives the harness; see `e2e/` and `scripts/ci/run-ios-e2e-cell.sh`.
+
 1. Sets `ios.useFrameworks=dynamic` in Podfile properties (needed for multi-image LINKEDIT on dynamic-React hosts).
 2. Requires the shipped Ruby helper and calls `apply_post_install!` once (safe split — no Podfile regex for LLVM flags).
 3. Optionally restores dynamic frameworks for `Coverage` + matched fixture pods

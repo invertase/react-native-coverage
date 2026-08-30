@@ -1,0 +1,34 @@
+{
+  "name": "react-native-coverage-example-dynamic",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "pod:install": "cd ios && USE_FRAMEWORKS=dynamic RCT_NEW_ARCH_ENABLED=1 pod install",
+    "ios:build": "xcodebuild -workspace ios/CoverageDynamic.xcworkspace -scheme CoverageDynamic -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build/DerivedData CODE_SIGNING_ALLOWED=NO build"
+  },
+  "dependencies": {
+    "coverage-fixture": "workspace:*",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-coverage": "workspace:*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "20.1.0",
+    "@react-native-community/cli-platform-android": "20.1.0",
+    "@react-native-community/cli-platform-ios": "20.1.0",
+    "@react-native/babel-preset": "0.86.3",
+    "@react-native/metro-config": "0.86.3",
+    "@react-native/typescript-config": "0.86.3",
+    "@types/react": "^19.2.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">= 22.11.0"
+  }
+}

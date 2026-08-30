@@ -31,14 +31,26 @@ export default function App() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>react-native-coverage</Text>
-      <Text style={styles.subtitle}>Expo example + CoverageFixture</Text>
-      <Text style={styles.status}>{status}</Text>
+    <View style={styles.container} testID="coverage-root">
+      <Text style={styles.title} testID="coverage-title">
+        react-native-coverage
+      </Text>
+      <Text style={styles.subtitle} testID="coverage-cell">
+        Expo static cell + CoverageFixture
+      </Text>
+      <Text style={styles.status} testID="coverage-status">
+        {status}
+      </Text>
       {lastHit != null ? (
-        <Text style={styles.status}>last hit accumulator: {lastHit}</Text>
+        <Text style={styles.status} testID="coverage-last-hit">
+          last hit accumulator: {lastHit}
+        </Text>
       ) : null}
-      <Button title="Hit fixture + flush" onPress={runCoverageDemo} />
+      <Button
+        title="Hit fixture + flush"
+        onPress={runCoverageDemo}
+        testID="coverage-hit-button"
+      />
       <StatusBar style="auto" />
     </View>
   );

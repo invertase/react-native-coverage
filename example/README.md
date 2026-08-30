@@ -6,6 +6,10 @@ Dedicated Expo test harness for the library (Pattern C). Workspace dependency:
 "react-native-coverage": "*"
 ```
 
+This is the **iOS static** CI cell. The **primary dynamic** cell is
+`example-dynamic/` (bare RN + `USE_FRAMEWORKS=dynamic`) because Expo force-statics
+React-Core and cannot host distinct `CoverageFixture.framework` images.
+
 ## Enable coverage wiring
 
 `app.json` lists the config plugin with fixture matchers:
@@ -30,7 +34,7 @@ Dedicated Expo test harness for the library (Pattern C). Workspace dependency:
 | CocoaPods Ruby helper | LLVM flags + `CoverageConfig.h` regen; optional dynamic-framework restore (off under Expo) |
 | Gradle Jacoco helpers | `android/rn-coverage.gradle` (library instrumentation) + `android/rn-coverage-jacoco.gradle` (report tasks) |
 
-> Expo keeps React-Core static, so `forceDynamicFrameworks` must stay **false** here (CocoaPods rejects dynamic Coverage* pods that depend on static React). Multi-image LINKEDIT with distinct `.framework` images remains for bare RN / RNFB dynamic hosts.
+> Expo keeps React-Core static, so `forceDynamicFrameworks` must stay **false** here (CocoaPods rejects dynamic Coverage* pods that depend on static React). Multi-image LINKEDIT with distinct `.framework` images remains for bare RN / RNFB dynamic hosts (`example-dynamic/`).
 
 ## Scripts
 
@@ -48,13 +52,14 @@ non-zero native coverage under multi-image LLVM flush (iOS) and Jacoco (Android)
 
 ## Appium (e2e)
 
-**Appium** is the intended e2e runner for flush → pull → export proof.
+**Appium** (WebDriverIO) is the e2e runner for flush → pull → export proof.
 
-Scaffold status: stub only. Add WebDriverIO/Appium config and CI in a later queue item. Until then, manually:
+From repo root:
 
-1. `yarn prebuild` then `yarn ios` / `yarn android` (New Architecture)
-2. App auto-runs fixture `hit()` + `flush()` on mount
-3. `rn-coverage ios pull` / `rn-coverage android pull` from the host
-4. `rn-coverage ios export` / `rn-coverage android report` + `rn-coverage assert`
+```sh
+yarn e2e:ios:static     # this Expo app (static cell)
+yarn e2e:ios:dynamic    # example-dynamic (primary)
+yarn e2e:android        # this Expo app (Jacoco)
+```
 
-Do not expect Appium CI on this branch yet.
+Specs live in `e2e/specs/`. CI runs these on every PR (see `.github/workflows/ci.yml`).

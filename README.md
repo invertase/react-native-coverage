@@ -22,7 +22,19 @@ yarn add react-native-coverage
 
 The `example/` app is an Expo project linked via Yarn workspaces (`"react-native-coverage": "*"`).
 
-E2E runner target: **Appium** (see `example/README.md`). Full Appium CI is a later item.
+E2E runner: **Appium** (WebDriverIO). CI cells on every PR:
+
+| Cell | Path | Notes |
+|------|------|-------|
+| iOS **dynamic** (primary) | `example-dynamic/` | Bare RN + dynamic frameworks; non-zero fixture LCOV gate |
+| iOS **static** | `example/` | Expo staticlib merge; fixture hits still asserted |
+| Android | `example/` | Jacoco + Appium |
+
+```sh
+yarn e2e:ios:dynamic
+yarn e2e:ios:static
+yarn e2e:android
+```
 
 ## Development
 

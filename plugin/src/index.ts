@@ -12,8 +12,7 @@ import path from 'node:path';
 const PACKAGE_NAME = 'react-native-coverage';
 
 /** Bump when Podfile injection shape changes so re-prebuild rewrites. */
-const PODFILE_MARKER =
-  '# react-native-coverage: post_install coverage flags';
+const PODFILE_MARKER = '# react-native-coverage: post_install coverage flags';
 const ROOT_GRADLE_MARKER = '// react-native-coverage: root instrumentation';
 const APP_GRADLE_MARKER = '// react-native-coverage: app jacoco report';
 const APP_DEBUG_MARKER =
@@ -104,7 +103,9 @@ apply from: new File(rnCoverageRoot, "android/rn-coverage.gradle")
 
       if (!cfg.modResults.contents.includes(APP_DEBUG_MARKER)) {
         // Prefer buildTypes.debug — do NOT match signingConfigs.debug.
-        if (/buildTypes\s*\{[\s\S]*?\bdebug\s*\{/.test(cfg.modResults.contents)) {
+        if (
+          /buildTypes\s*\{[\s\S]*?\bdebug\s*\{/.test(cfg.modResults.contents)
+        ) {
           cfg.modResults.contents = cfg.modResults.contents.replace(
             /(buildTypes\s*\{[\s\S]*?\bdebug\s*\{)/,
             `$1\n            testCoverageEnabled true\n            ${APP_DEBUG_MARKER}`

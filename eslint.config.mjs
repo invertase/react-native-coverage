@@ -24,6 +24,20 @@ export default defineConfig([
     },
   },
   {
-    ignores: ['node_modules/', 'lib/', 'plugin/build/', 'coverage/'],
+    ignores: [
+      'node_modules/',
+      '**/node_modules/',
+      'lib/',
+      'plugin/build/',
+      'coverage/',
+      '**/coverage/',
+      'e2e/',
+      'example/android/',
+      'example/ios/',
+      'example-dynamic/android/',
+      'example-dynamic/ios/',
+      'example-dynamic/**/build/',
+      '.agents/',
+    ],
   },
 ]);

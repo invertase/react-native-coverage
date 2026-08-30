@@ -76,6 +76,10 @@ export function collectCoverageObjects(
 
   addObject(path.join(productsDir, `${appName}.app`, appName));
 
+  // Expo / Xcode companion image: LLVM counters for statically merged pods often
+  // live in AppName.debug.dylib (MH_DYLIB) rather than the MH_EXECUTE binary.
+  addObject(path.join(productsDir, `${appName}.app`, `${appName}.debug.dylib`));
+
   const matchesPrefix = (name: string) =>
     frameworkNamePrefixes.length === 0
       ? false

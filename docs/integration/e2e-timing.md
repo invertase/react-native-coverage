@@ -10,4 +10,10 @@ Typical sequence:
 4. `rn-coverage android report` or `rn-coverage ios export` (+ optional `ios report` / `ios summary`).
 5. Optional: `rn-coverage assert` (exit 2 on empty artifacts when `strict: true`).
 
-The example app documents Appium as the intended e2e runner; full CI wiring is a later item.
+The example app documents Appium as the intended e2e runner. CI wiring:
+
+- `yarn e2e:ios:dynamic` — primary bare-RN dynamic frameworks cell
+- `yarn e2e:ios:static` — Expo static cell
+- `yarn e2e:android` — Expo Android Jacoco cell
+
+Scripts live under `scripts/ci/`; WDIO specs under `e2e/`.
