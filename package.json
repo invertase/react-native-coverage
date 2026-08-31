@@ -56,7 +56,10 @@
     "test": "jest",
     "e2e:ios:dynamic": "CELL=dynamic bash scripts/ci/run-ios-e2e-cell.sh",
     "e2e:ios:static": "CELL=static bash scripts/ci/run-ios-e2e-cell.sh",
-    "e2e:android": "bash scripts/ci/run-android-e2e.sh"
+    "e2e:android": "bash scripts/ci/run-android-e2e.sh",
+    "commitlint": "commitlint",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run"
   },
   "keywords": [
     "react-native",
@@ -84,13 +87,20 @@
     "commander": "^13.1.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@eslint/compat": "^2.1.0",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.39.4",
     "@react-native/babel-preset": "0.86.3",
     "@react-native/eslint-config": "0.86.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^12.0.0",
+    "@semantic-release/npm": "^13.1.1",
+    "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/jest": "^29.5.14",
     "@types/react": "^19.2.0",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
     "del-cli": "^7.0.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
@@ -102,6 +112,7 @@
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-builder-bob": "^0.43.0",
+    "semantic-release": "^25.0.1",
     "ts-jest": "^29.4.0",
     "turbo": "^2.9.16",
     "typescript": "^5.9.2"

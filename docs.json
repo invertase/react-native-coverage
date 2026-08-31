@@ -16,7 +16,7 @@
     },
     {
       "group": "Reference",
-      "pages": ["cli", "config"]
+      "pages": ["cli", "config", "releasing"]
     }
   ]
 }

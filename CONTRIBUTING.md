@@ -112,3 +112,17 @@ When you're sending a pull request:
 - Review the documentation to make sure it looks good.
 - Follow the pull request template when opening a pull request.
 - For pull requests that change the API or implementation, discuss with maintainers first by opening an issue.
+- Use a [Conventional Commits](https://www.conventionalcommits.org/) **PR title** (enforced by CI). Prefer squash merges so the title becomes the release commit.
+
+#### PR title examples
+
+- `feat: add ios summary JSON schema`
+- `fix: exit 2 when fixture LCOV is empty`
+- `docs: document Pattern C consumer checklist`
+- `chore: bump Appium in e2e workspace`
+
+Local check: `echo "feat: your subject" | yarn commitlint`
+
+### Releasing
+
+Maintainers: see [docs/releasing.md](./docs/releasing.md). Releases are **manual** (`workflow_dispatch` + semantic-release). Do not publish from a laptop unless performing the one-time human bootstrap (separate from day-to-day CI releases).

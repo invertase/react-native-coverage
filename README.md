@@ -46,6 +46,10 @@ yarn typecheck
 node bin/rn-coverage.js --help
 ```
 
+## Releasing
+
+Conventional Commits + semantic-release; **manual** GitHub Actions `workflow_dispatch` only (no push-to-main publish). Operator steps: [docs/releasing.md](./docs/releasing.md).
+
 ## License
 
 Apache-2.0

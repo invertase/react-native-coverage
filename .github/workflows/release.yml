@@ -1,0 +1,47 @@
+# Manual release only. Do not auto-publish on push to main.
+#
+# Prerequisites before the first successful CI publish:
+# 1. Human bootstrap npm publish (OTP) — must not collide with semantic-release tags
+# 2. Configure npm Trusted Publisher (OIDC) for this workflow path
+# 3. Green `main` CI
+#
+# Until then: do not run this workflow expecting a publish.
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: semantic-release
+    if: github.repository == 'invertase/react-native-coverage'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # git tags + GitHub Releases
+      issues: write # comment on released issues
+      pull-requests: write # comment on released PRs
+      id-token: write # npm OIDC trusted publishing + provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build package
+        run: yarn prepare
+
+      - name: Release
+        run: yarn semantic-release
+        env:
+          # Default Actions token is enough for tags/releases when contents:write.
+          # No NPM_TOKEN: OIDC trusted publishing after first human publish + Trusted Publisher setup.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Avoid setup-node writing an .npmrc that breaks OIDC (semantic-release docs).
+          NPM_CONFIG_PROVENANCE: 'true'
