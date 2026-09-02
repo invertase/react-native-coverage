@@ -17,6 +17,9 @@ LOG_DIR="${REPORT_DIR}/logs/${CELL}"
 COV_DIR="${REPORT_DIR}/coverage/${CELL}"
 mkdir -p "$LOG_DIR" "$COV_DIR"
 
+# Istanbul instrument Metro bundles; flush() also dumpJsCoverage → coverage-final.json
+export RN_COVERAGE_JS=1
+
 # Both cells default Metro to :8081 (Expo Debug apps look there). Kill leftovers
 # first so serial local runs of dynamic → static do not collide. Override via env.
 METRO_PORT="${METRO_PORT:-8081}"
@@ -263,4 +266,24 @@ node "$ROOT/bin/rn-coverage.js" \
 mkdir -p "$APP_DIR/coverage/ios"
 cp "$COV_DIR/lcov.info" "$APP_DIR/coverage/ios/lcov.info"
 
-echo "OK cell=$CELL lcov=$COV_DIR/lcov.info"
+echo "==> Pull + NYC-remap JS/TS coverage"
+JS_DIR="$COV_DIR/js"
+mkdir -p "$JS_DIR"
+node "$ROOT/bin/rn-coverage.js" \
+  -c "$CONFIG_PATH" \
+  --strict \
+  js pull \
+  --platform ios \
+  --device "$IOS_UDID" \
+  --output "$JS_DIR" 2>&1 | tee "$LOG_DIR/js-pull.log"
+
+node "$ROOT/bin/rn-coverage.js" \
+  -c "$CONFIG_PATH" \
+  --strict \
+  js report \
+  --input "$JS_DIR/coverage-final.json" \
+  --output "$JS_DIR" \
+  --cwd "$APP_DIR" \
+  --nyc-config "$APP_DIR/nyc.config.js" 2>&1 | tee "$LOG_DIR/js-report.log"
+
+echo "OK cell=$CELL lcov=$COV_DIR/lcov.info js=$JS_DIR/lcov.info"

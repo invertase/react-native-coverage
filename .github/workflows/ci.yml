@@ -36,13 +36,23 @@ jobs:
         run: yarn typecheck
 
       - name: Unit tests
-        run: yarn test
+        run: yarn test:coverage
 
       - name: Build package
         run: yarn prepare
 
       - name: CLI help smoke
         run: node bin/rn-coverage.js --help
+
+      - name: Upload unit coverage (Codecov)
+        if: always()
+        # https://github.com/codecov/codecov-action/releases
+        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        with:
+          files: coverage/unit/lcov.info
+          flags: unit-js
+          name: unit-js
+          fail_ci_if_error: false
 
   # Primary: bare RN + USE_FRAMEWORKS=dynamic → CoverageFixture.framework +
   # non-zero fixture LCOV. Expo cannot host this cell (React-Core force-static).
@@ -93,6 +103,16 @@ jobs:
             artifacts/e2e/logs/dynamic/**
           if-no-files-found: warn
 
+      - name: Upload to Codecov
+        if: always()
+        # https://github.com/codecov/codecov-action/releases
+        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        with:
+          files: artifacts/e2e/coverage/dynamic/lcov.info,artifacts/e2e/coverage/dynamic/js/lcov.info
+          flags: e2e-ios-dynamic
+          name: e2e-ios-dynamic
+          fail_ci_if_error: false
+
   # Expo example: staticlib merge (honest static cell). Still asserts fixture hits.
   e2e-ios-static:
     name: e2e / iOS static (Expo)
@@ -140,6 +160,16 @@ jobs:
             artifacts/e2e/coverage/static/**
             artifacts/e2e/logs/static/**
           if-no-files-found: warn
+
+      - name: Upload to Codecov
+        if: always()
+        # https://github.com/codecov/codecov-action/releases
+        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        with:
+          files: artifacts/e2e/coverage/static/lcov.info,artifacts/e2e/coverage/static/js/lcov.info
+          flags: e2e-ios-static
+          name: e2e-ios-static
+          fail_ci_if_error: false
 
   e2e-android:
     name: e2e / Android (Expo)
@@ -190,3 +220,13 @@ jobs:
             artifacts/e2e/coverage/android/**
             artifacts/e2e/logs/android/**
           if-no-files-found: warn
+
+      - name: Upload to Codecov
+        if: always()
+        # https://github.com/codecov/codecov-action/releases
+        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        with:
+          files: artifacts/e2e/coverage/android/jacocoTestReport.xml,artifacts/e2e/coverage/android/js/lcov.info
+          flags: e2e-android
+          name: e2e-android
+          fail_ci_if_error: false

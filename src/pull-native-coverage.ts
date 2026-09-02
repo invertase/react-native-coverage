@@ -13,7 +13,7 @@ export type PullOptions = {
   config?: CoverageConfig;
 };
 
-function getAdbBinary(): string {
+export function getAdbBinary(): string {
   return process.env.ANDROID_HOME
     ? `${process.env.ANDROID_HOME}/platform-tools/adb`
     : 'adb';

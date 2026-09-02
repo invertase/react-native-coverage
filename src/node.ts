@@ -43,4 +43,10 @@ export {
   pullAndroidCoverageWithRetry,
   pullIosCoverage,
   runJacocoTestReport,
+  getAdbBinary,
 } from './pull-native-coverage';
+export {
+  pullAndroidJsCoverage,
+  pullIosJsCoverage,
+  reportJsCoverage,
+} from './js-coverage';

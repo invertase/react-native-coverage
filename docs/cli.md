@@ -15,6 +15,9 @@ rn-coverage ios report --derived-data <path> [--profdata <path>] [--output-dir <
 rn-coverage ios summary --derived-data <path> [--profdata <path>]
 
 rn-coverage assert [--platform ios|android|all] [--lcov <path>] [--jacoco-xml <path>]
+
+rn-coverage js pull --platform android|ios [--device <id>] [--output <dir>]
+rn-coverage js report --input <coverage-final.json> [--output <dir>] [--cwd <path>] [--nyc-config <path>]
 ```
 
 ## Exit codes

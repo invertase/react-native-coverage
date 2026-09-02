@@ -62,6 +62,16 @@ export type CoverageConfig = {
     /** Relative path to jacocoTestReport.xml after `android report`. */
     jacocoReportXml: string;
   };
+  /**
+   * Istanbul / NYC (TypeScript via source maps). Written by TurboModule
+   * `dumpJsCoverage` during `flush()` when Metro is instrumented.
+   */
+  js: {
+    androidRelativePath: string;
+    androidStagingPath: string;
+    /** Path under the iOS app data container (usually Documents/…). */
+    iosRelativePath: string;
+  };
   /** Rules applied left-to-right to LCOV `SF:` paths. */
   sourcePathRewrite: SourcePathRewriteRule[];
   /**
@@ -90,6 +100,11 @@ export const DEFAULT_COVERAGE_CONFIG: CoverageConfig = {
     jacocoReportXml:
       'android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml',
   },
+  js: {
+    androidRelativePath: 'files/coverage-final.json',
+    androidStagingPath: '/data/local/tmp/coverage/coverage-final.json',
+    iosRelativePath: 'Documents/coverage-final.json',
+  },
   sourcePathRewrite: [],
   strict: true,
   assert: {
@@ -106,6 +121,7 @@ export type CoverageConfigInput = {
   app?: Partial<CoverageConfig['app']>;
   ios?: Partial<CoverageConfig['ios']>;
   android?: Partial<CoverageConfig['android']>;
+  js?: Partial<CoverageConfig['js']>;
   sourcePathRewrite?: SourcePathRewriteRule[];
   strict?: boolean;
   assert?: Partial<CoverageAssertConfig>;
@@ -128,6 +144,10 @@ export function resolveCoverageConfig(
     android: {
       ...DEFAULT_COVERAGE_CONFIG.android,
       ...input.android,
+    },
+    js: {
+      ...DEFAULT_COVERAGE_CONFIG.js,
+      ...input.js,
     },
     sourcePathRewrite:
       input.sourcePathRewrite ?? DEFAULT_COVERAGE_CONFIG.sourcePathRewrite,

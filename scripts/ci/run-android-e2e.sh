@@ -8,6 +8,9 @@ LOG_DIR="${REPORT_DIR}/logs/android"
 COV_DIR="${REPORT_DIR}/coverage/android"
 mkdir -p "$LOG_DIR" "$COV_DIR"
 
+# Istanbul instrument Metro bundles; flush() also dumpJsCoverage → coverage-final.json
+export RN_COVERAGE_JS=1
+
 APP_DIR="$ROOT/example"
 CONFIG_PATH="$APP_DIR/react-native-coverage.config.js"
 PACKAGE_ID="com.example.coverage"
@@ -174,4 +177,23 @@ node "$ROOT/bin/rn-coverage.js" \
   --platform android \
   --jacoco-xml "$COV_DIR/jacocoTestReport.xml" 2>&1 | tee "$LOG_DIR/android-assert.log"
 
-echo "OK android jacoco=$COV_DIR/jacocoTestReport.xml"
+echo "==> Pull + NYC-remap JS/TS coverage"
+JS_DIR="$COV_DIR/js"
+mkdir -p "$JS_DIR"
+node "$ROOT/bin/rn-coverage.js" \
+  -c "$CONFIG_PATH" \
+  --strict \
+  js pull \
+  --platform android \
+  --output "$JS_DIR" 2>&1 | tee "$LOG_DIR/js-pull.log"
+
+node "$ROOT/bin/rn-coverage.js" \
+  -c "$CONFIG_PATH" \
+  --strict \
+  js report \
+  --input "$JS_DIR/coverage-final.json" \
+  --output "$JS_DIR" \
+  --cwd "$APP_DIR" \
+  --nyc-config "$APP_DIR/nyc.config.js" 2>&1 | tee "$LOG_DIR/js-report.log"
+
+echo "OK android jacoco=$COV_DIR/jacocoTestReport.xml js=$JS_DIR/lcov.info"

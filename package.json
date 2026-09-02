@@ -54,6 +54,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "e2e:ios:dynamic": "CELL=dynamic bash scripts/ci/run-ios-e2e-cell.sh",
     "e2e:ios:static": "CELL=static bash scripts/ci/run-ios-e2e-cell.sh",
     "e2e:android": "bash scripts/ci/run-android-e2e.sh",
@@ -66,6 +67,8 @@
     "coverage",
     "jacoco",
     "llvm",
+    "istanbul",
+    "nyc",
     "ios",
     "android",
     "turbo-module"
@@ -84,7 +87,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "nyc": "^17.1.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -100,6 +104,7 @@
     "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/jest": "^29.5.14",
     "@types/react": "^19.2.0",
+    "babel-plugin-istanbul": "^7.0.1",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "del-cli": "^7.0.0",
     "eslint": "^9.39.4",

@@ -63,9 +63,15 @@ apply from: new File(rnCoverageRoot, "android/rn-coverage-jacoco.gradle")
 
 ## Runtime + CLI
 
-1. Call `flush()` from the TurboModule at the end of an e2e run (Emma `RT.dumpCoverageData` → `filesDir/coverage.ec`).
-2. `rn-coverage android pull` then `rn-coverage android report` (`jacocoTestReport`).
-3. `rn-coverage assert` (strict empty → exit 2).
+1. Call `flush()` from the TurboModule at the end of an e2e run (Emma `RT.dumpCoverageData` → `filesDir/coverage.ec`; also dumps Istanbul JSON when Metro is instrumented).
+2. `rn-coverage android pull` — output under **`android/app/build/…`** so Jacoco sees the `.ec` (not only `artifacts/`). Staging parent dirs are created for you.
+3. `rn-coverage android report` (`jacocoTestReport`).
+4. `rn-coverage assert` (strict empty → exit 2).
+5. Optional JS: `rn-coverage js pull` / `js report` — see [JS / TypeScript](js.md).
+
+Jacoco package names in XML use slashes (`com/foo`); assert matchers may use dots (`com.foo`) — both work.
+
+CI pitfalls (emulator Metro, `byTestId`, etc.): [CI Appium notes](ci-appium.md).
 
 Shipped helpers:
 

@@ -34,9 +34,20 @@ class CoverageModule(
     }
   }
 
+  override fun dumpJsCoverage(json: String) {
+    try {
+      val out = File(reactApplicationContext.filesDir, JS_COVERAGE_FILE_NAME)
+      out.writeText(json)
+      Log.i(TAG, "[native-coverage] wrote JS coverage to ${out.absolutePath}")
+    } catch (e: Exception) {
+      Log.e(TAG, "[native-coverage] dumpJsCoverage failed", e)
+    }
+  }
+
   companion object {
     const val NAME = NativeCoverageSpec.NAME
     private const val TAG = "Coverage"
     private const val COVERAGE_FILE_NAME = "coverage.ec"
+    private const val JS_COVERAGE_FILE_NAME = "coverage-final.json"
   }
 }

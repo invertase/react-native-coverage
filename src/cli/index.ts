@@ -21,6 +21,11 @@ import {
   resolveAndroidDeviceId,
   runJacocoTestReport,
 } from '../pull-native-coverage';
+import {
+  pullAndroidJsCoverage,
+  pullIosJsCoverage,
+  reportJsCoverage,
+} from '../js-coverage';
 
 export { EXIT_OK, EXIT_ERROR, EXIT_STRICT_EMPTY };
 
@@ -251,6 +256,100 @@ async function main(): Promise<void> {
               profdata: opts.profdata,
               config,
             });
+          } catch (error) {
+            console.error(`[rn-coverage] ${(error as Error).message}`);
+            process.exitCode = mapErrorToExit(error);
+          }
+        })
+    );
+
+  program
+    .command('js')
+    .description(
+      'Istanbul/NYC TypeScript coverage (source-map remap after Metro e2e)'
+    )
+    .addCommand(
+      new Command('pull')
+        .description(
+          'Pull coverage-final.json written by flush()/dumpJsCoverage'
+        )
+        .option('--platform <name>', 'android | ios', 'android')
+        .option('--device <id>', 'adb serial or simulator UDID')
+        .option('--output <dir>', 'Local output directory', 'coverage/js')
+        .action(async (opts, cmd) => {
+          const rootOpts = rootOptsFrom(cmd);
+          const config = applyStrictOverride(
+            await loadCoverageConfig(process.cwd(), rootOpts.config),
+            rootOpts
+          );
+          try {
+            if (opts.platform === 'android') {
+              const deviceId = resolveAndroidDeviceId(opts.device);
+              const pulled = pullAndroidJsCoverage(deviceId, {
+                softFail: !config.strict,
+                outputDir: opts.output,
+                config,
+              });
+              if (!pulled && config.strict) {
+                process.exitCode = EXIT_STRICT_EMPTY;
+              }
+            } else if (opts.platform === 'ios') {
+              if (!opts.device) {
+                console.error(
+                  '[rn-coverage] js pull --platform ios requires --device <udid>'
+                );
+                process.exitCode = EXIT_ERROR;
+                return;
+              }
+              const pulled = pullIosJsCoverage(opts.device, {
+                softFail: !config.strict,
+                outputDir: opts.output,
+                config,
+              });
+              if (!pulled && config.strict) {
+                process.exitCode = EXIT_STRICT_EMPTY;
+              }
+            } else {
+              console.error(
+                `[rn-coverage] js pull: --platform must be android|ios (got ${opts.platform})`
+              );
+              process.exitCode = EXIT_ERROR;
+            }
+          } catch (error) {
+            console.error(`[rn-coverage] ${(error as Error).message}`);
+            process.exitCode = mapErrorToExit(error);
+          }
+        })
+    )
+    .addCommand(
+      new Command('report')
+        .description(
+          'NYC report from coverage-final.json (sourceMap remap → lcov.info)'
+        )
+        .requiredOption(
+          '--input <path>',
+          'coverage-final.json or directory of Istanbul JSON'
+        )
+        .option('--output <dir>', 'Report directory', 'coverage/js')
+        .option('--cwd <path>', 'NYC cwd for include globs', process.cwd())
+        .option('--nyc-config <path>', 'Path to nyc.config.js')
+        .action(async (opts, cmd) => {
+          const rootOpts = rootOptsFrom(cmd);
+          const config = applyStrictOverride(
+            await loadCoverageConfig(process.cwd(), rootOpts.config),
+            rootOpts
+          );
+          try {
+            const result = reportJsCoverage({
+              input: opts.input,
+              outputDir: opts.output,
+              cwd: opts.cwd,
+              nycConfig: opts.nycConfig,
+              softFail: !config.strict,
+            });
+            if (!result.ok && config.strict) {
+              process.exitCode = EXIT_STRICT_EMPTY;
+            }
           } catch (error) {
             console.error(`[rn-coverage] ${(error as Error).message}`);
             process.exitCode = mapErrorToExit(error);

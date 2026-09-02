@@ -1,6 +1,6 @@
 {
   "name": "react-native-coverage",
-  "description": "Native code coverage tooling for React Native test apps",
+  "description": "Native + JS/TS coverage tooling for React Native test apps",
   "sidebar": [
     {
       "group": "Getting Started",
@@ -11,7 +11,9 @@
       "pages": [
         "integration/android",
         "integration/ios",
-        "integration/e2e-timing"
+        "integration/js",
+        "integration/e2e-timing",
+        "integration/ci-appium"
       ]
     },
     {
