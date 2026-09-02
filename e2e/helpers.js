@@ -10,17 +10,32 @@ function requiredEnv(name) {
   return value;
 }
 
+/**
+ * Locate by React Native testID.
+ * iOS: testID → accessibility id (`~id`).
+ * Android: testID → resource-id (content-desc is often empty unless accessibilityLabel is set).
+ */
+function byTestId(id) {
+  if (driver.isAndroid) {
+    return $(`android=new UiSelector().resourceId("${id}")`);
+  }
+  return $(`~${id}`);
+}
+
 function iosCapabilities() {
   const caps = {
     'platformName': 'iOS',
     'appium:automationName': 'XCUITest',
-    'appium:deviceName': process.env.IOS_DEVICE_NAME || 'iPhone 16',
+    'appium:deviceName': process.env.IOS_DEVICE_NAME || 'iPhone 17',
     'appium:platformVersion': process.env.IOS_PLATFORM_VERSION,
     'appium:bundleId': requiredEnv('IOS_BUNDLE_ID'),
     'appium:noReset': true,
     'appium:newCommandTimeout': 240,
     'appium:wdaLaunchTimeout': 120000,
     'appium:wdaConnectionTimeout': 240000,
+    // Headless simctl boot + Appium UI restart hung at 120s on GHA; give the
+    // post-open Simulator.app boot path room (matches RNFB-style long wait).
+    'appium:simulatorStartupTimeout': 300000,
   };
 
   if (process.env.IOS_UDID) {
@@ -46,6 +61,8 @@ function androidCapabilities() {
     'appium:appActivity': process.env.ANDROID_APP_ACTIVITY || '.MainActivity',
     'appium:noReset': true,
     'appium:newCommandTimeout': 240,
+    // Give Metro first-bundle time after adb reverse (seen ~9s on GHA).
+    'appium:appWaitDuration': 120000,
   };
 
   if (process.env.ANDROID_APP_PATH) {
@@ -59,6 +76,7 @@ function androidCapabilities() {
 }
 
 module.exports = {
+  byTestId,
   iosCapabilities,
   androidCapabilities,
   requiredEnv,

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {
@@ -136,6 +138,26 @@ describe('assertAndroidJacoco', () => {
     );
     expect(stats.packageCount).toBe(1);
     expect(stats.lineCovered).toBe(4);
+  });
+
+  it('matches dotted includes against slash Jacoco package names', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-jacoco-slash-'));
+    const xmlPath = path.join(tmp, 'report.xml');
+    fs.writeFileSync(
+      xmlPath,
+      `<?xml version="1.0"?>
+<report name="app">
+  <package name="com/coverage/fixture">
+    <counter type="INSTRUCTION" missed="0" covered="10"/>
+    <counter type="LINE" missed="2" covered="27"/>
+  </package>
+</report>
+`
+    );
+    const stats = analyzeJacocoXml(xmlPath, ['coverage.fixture']);
+    expect(stats.packageCount).toBe(1);
+    expect(stats.lineCovered).toBe(27);
+    expect(stats.lineMissed).toBe(2);
   });
 });
 

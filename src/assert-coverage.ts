@@ -111,6 +111,9 @@ export type JacocoAssertStats = {
 /**
  * Parse Jacoco XML package rollups. Matchers are case-insensitive substrings
  * of `<package name="...">`. Empty matchers → all packages.
+ *
+ * Jacoco uses `/` separators (`com/coverage/fixture`); configs often use Java
+ * dots (`coverage.fixture`). Normalize both so either form matches.
  */
 export function analyzeJacocoXml(
   xmlPath: string,
@@ -121,6 +124,10 @@ export function analyzeJacocoXml(
     ...xml.matchAll(/<package name="([^"]+)"[^>]*>([\s\S]*?)<\/package>/g),
   ];
 
+  const normalizePkg = (value: string) =>
+    value.toLowerCase().replace(/[./]/g, '/');
+  const normalizedIncludes = packageIncludes.map(normalizePkg);
+
   let packageCount = 0;
   let lineCovered = 0;
   let lineMissed = 0;
@@ -128,9 +135,10 @@ export function analyzeJacocoXml(
   for (const match of packageBlocks) {
     const name = match[1]!;
     const body = match[2]!;
+    const normalizedName = normalizePkg(name);
     if (
-      packageIncludes.length > 0 &&
-      !packageIncludes.some((m) => name.toLowerCase().includes(m.toLowerCase()))
+      normalizedIncludes.length > 0 &&
+      !normalizedIncludes.some((m) => normalizedName.includes(m))
     ) {
       continue;
     }

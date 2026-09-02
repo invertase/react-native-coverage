@@ -1,9 +1,11 @@
+const { byTestId } = require('../helpers');
+
 describe('coverage fixture harness', () => {
   it('shows non-idle status after mount hit+flush', async () => {
-    const status = await $('~coverage-status');
+    const status = await byTestId('coverage-status');
     await status.waitForDisplayed({ timeout: 60000 });
 
-    // Appium accessibility id maps to React Native testID.
+    // Appium: iOS uses accessibility id from testID; Android uses resource-id.
     // Retry briefly: mount effect may still be running.
     await browser.waitUntil(
       async () => {
@@ -21,7 +23,7 @@ describe('coverage fixture harness', () => {
     expect(text).toMatch(/hit=\d+/);
 
     // Optional second flush via button (exercises interaction path).
-    const button = await $('~coverage-hit-button');
+    const button = await byTestId('coverage-hit-button');
     if (await button.isDisplayed()) {
       await button.click();
       await browser.pause(500);

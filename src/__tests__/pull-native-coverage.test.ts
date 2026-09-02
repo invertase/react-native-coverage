@@ -78,8 +78,11 @@ describe('pullAndroidCoverage', () => {
 
   it('writes local ec path on success', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-pull-ok-'));
+    const cmds: string[] = [];
     mockedExecSync.mockImplementation((cmd: string) => {
-      if (String(cmd).includes('pull')) {
+      const command = String(cmd);
+      cmds.push(command);
+      if (command.includes('pull')) {
         fs.writeFileSync(path.join(tmp, 'emulator_coverage.ec'), 'ec');
       }
       return '';
@@ -91,6 +94,7 @@ describe('pullAndroidCoverage', () => {
     });
     expect(result).toBe(path.join(tmp, 'emulator_coverage.ec'));
     expect(fs.existsSync(result!)).toBe(true);
+    expect(cmds.some((c) => c.includes('mkdir -p'))).toBe(true);
   });
 });
 

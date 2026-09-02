@@ -12,12 +12,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Expo SDK 57 requires Xcode 26.4+; macos-26 + latest-stable matches RNFB iOS e2e style.
+  XCODE_VERSION: latest-stable
+  # Xcode 26.6 / macos-26 ships iPhone 17* devices (no plain iPhone 16). Matches RNFB.
+  IOS_DEVICE_NAME: iPhone 17
+
 jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -41,21 +48,33 @@ jobs:
   # non-zero fixture LCOV. Expo cannot host this cell (React-Core force-static).
   e2e-ios-dynamic:
     name: e2e / iOS dynamic (primary)
-    runs-on: macos-15
+    runs-on: macos-26
     needs: unit
     timeout-minutes: 90
     env:
       CELL: dynamic
-      IOS_DEVICE_NAME: iPhone 16
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s /Applications/Xcode.app
+      # https://github.com/maxim-lobanov/setup-xcode/releases
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Xcode / simulator diagnostics
+        run: |
+          set -euo pipefail
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR:-}"
+          xcodebuild -version
+          xcrun swiftc --version
+          # Listing sims reduces intermittent "destination unavailable" flakes
+          # (same pattern as RNFB tests_e2e_ios.yml).
+          xcrun simctl list
 
       - name: CocoaPods
         run: gem install cocoapods -N || true
@@ -65,7 +84,8 @@ jobs:
 
       - name: Upload coverage artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        # https://github.com/actions/upload-artifact/releases
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-ios-dynamic
           path: |
@@ -76,21 +96,31 @@ jobs:
   # Expo example: staticlib merge (honest static cell). Still asserts fixture hits.
   e2e-ios-static:
     name: e2e / iOS static (Expo)
-    runs-on: macos-15
+    runs-on: macos-26
     needs: unit
     timeout-minutes: 90
     env:
       CELL: static
-      IOS_DEVICE_NAME: iPhone 16
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s /Applications/Xcode.app
+      # https://github.com/maxim-lobanov/setup-xcode/releases
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Xcode / simulator diagnostics
+        run: |
+          set -euo pipefail
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR:-}"
+          xcodebuild -version
+          xcrun swiftc --version
+          xcrun simctl list
 
       - name: Ensure Expo prebuild
         run: |
@@ -102,7 +132,8 @@ jobs:
 
       - name: Upload coverage artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        # https://github.com/actions/upload-artifact/releases
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-ios-static
           path: |
@@ -117,13 +148,15 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup
         uses: ./.github/actions/setup
 
       - name: Setup Java
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b017243d6 # v4.7.1
+        # https://github.com/actions/setup-java/releases
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: 17
@@ -140,7 +173,8 @@ jobs:
           yarn workspace react-native-coverage-example exec expo prebuild --platform android --no-install
 
       - name: Android Appium e2e + Jacoco assert
-        uses: reactivecircus/android-emulator-runner@1dcd0090116d15e7c562f8db72807de5e0361f22 # v2.34.0
+        # https://github.com/ReactiveCircus/android-emulator-runner/releases
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
           arch: x86_64
@@ -148,7 +182,8 @@ jobs:
 
       - name: Upload coverage artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        # https://github.com/actions/upload-artifact/releases
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-android
           path: |

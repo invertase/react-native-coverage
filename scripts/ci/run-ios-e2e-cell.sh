@@ -4,14 +4,14 @@
 # Required env:
 #   CELL=dynamic|static
 # Optional:
-#   IOS_DEVICE_NAME (default iPhone 16)
+#   IOS_DEVICE_NAME (default iPhone 17)
 #   SKIP_BUILD=1  SKIP_METRO=1  SKIP_APPIUM_INSTALL=1
 #   METRO_PORT / APPIUM_PORT (defaults: Metro 8081 both cells; Appium 4723 dynamic / 4725 static)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CELL="${CELL:?CELL=dynamic|static required}"
-IOS_DEVICE_NAME="${IOS_DEVICE_NAME:-iPhone 16}"
+IOS_DEVICE_NAME="${IOS_DEVICE_NAME:-iPhone 17}"
 REPORT_DIR="${REPORT_DIR:-$ROOT/artifacts/e2e}"
 LOG_DIR="${REPORT_DIR}/logs/${CELL}"
 COV_DIR="${REPORT_DIR}/coverage/${CELL}"
@@ -205,6 +205,25 @@ if ! curl -sf "http://127.0.0.1:${APPIUM_PORT}/status" >/dev/null; then
   cat "$LOG_DIR/appium.log" >&2 || true
   exit 1
 fi
+
+echo "==> Pre-WDIO simulator diagnostics"
+{
+  echo "=== env ==="
+  echo "IOS_UDID=${IOS_UDID}"
+  echo "IOS_DEVICE_NAME=${IOS_DEVICE_NAME}"
+  echo "IOS_APP_PATH=${IOS_APP_PATH}"
+  echo "DEVELOPER_DIR=${DEVELOPER_DIR:-}"
+  echo "=== xcodebuild -version ==="
+  xcodebuild -version || true
+  echo "=== xcrun swiftc --version ==="
+  xcrun swiftc --version || true
+  echo "=== simctl list devices (match UDID) ==="
+  xcrun simctl list devices | grep -F "$IOS_UDID" || true
+  echo "=== simctl bootstatus ==="
+  xcrun simctl bootstatus "$IOS_UDID" || true
+  echo "=== Simulator.app processes ==="
+  pgrep -lf Simulator || true
+} | tee "$LOG_DIR/pre-wdio-sim.txt"
 
 echo "==> WDIO Appium e2e"
 (

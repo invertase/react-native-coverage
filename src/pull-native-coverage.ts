@@ -72,8 +72,11 @@ export function pullAndroidCoverage(
 ): string | null {
   const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
   const softFail = options.softFail ?? false;
+  // Default under app/build so subsequent `jacocoTestReport` finds the .ec
+  // (fileTree(project.buildDir)). Artifacts/ dirs alone leave the task SKIPPED.
   const localDestDir =
-    options.outputDir ?? path.resolve(process.cwd(), 'coverage/android');
+    options.outputDir ??
+    path.resolve(process.cwd(), 'android/app/build/outputs/code_coverage');
   const localDestFile = path.join(localDestDir, 'emulator_coverage.ec');
   const staging = config.android.detoxStagingPath;
   const adb = getAdbBinary();
@@ -82,6 +85,11 @@ export function pullAndroidCoverage(
   const relative = config.android.coverageRelativePath;
 
   try {
+    // Staging lives under /data/local/tmp/...; the parent dir is not created by
+    // the emulator (unlike Detox's /data/local/tmp/detox). Redirect fails with
+    // "No such file or directory" if we skip mkdir.
+    const stagingDir = path.posix.dirname(staging);
+    execSync(`${adb} ${serial} shell "mkdir -p ${stagingDir}"`);
     execSync(
       `${adb} ${serial} shell "run-as ${appId} cat ${relative} > ${staging}"`
     );
@@ -130,7 +138,10 @@ export async function pullAndroidCoverageWithRetry(
     }
   }
 
-  const message = `Android native coverage file not found after ${retries} attempts`;
+  const existed = androidCoverageFileExists(deviceId, config);
+  const message = existed
+    ? `Android native coverage pull failed after ${retries} attempts (file present but staging/pull failed)`
+    : `Android native coverage file not found after ${retries} attempts`;
   if (softFail) {
     console.warn(`[rn-coverage] ${message}`);
     return null;
