@@ -8,8 +8,10 @@ exports.config = {
   logLevel: 'info',
   bail: 1,
   waitforTimeout: 30000,
-  connectionRetryTimeout: 180000,
-  connectionRetryCount: 2,
+  // The outer cell runner owns serialized recovery; WDIO must never overlap
+  // session creation while a cold WDA build is still completing.
+  connectionRetryTimeout: 720000,
+  connectionRetryCount: 0,
   services: [],
   framework: 'mocha',
   reporters: ['spec'],

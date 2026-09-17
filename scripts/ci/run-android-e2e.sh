@@ -68,7 +68,7 @@ echo "==> Start Metro on :${METRO_PORT}"
 (
   cd "$APP_DIR"
   # CI=1 disables reload; avoid RN DevTools chrome-sandbox abort noise on GHA Linux.
-  CI=1 EXPO_NO_TELEMETRY=1 yarn start --port "$METRO_PORT"
+  CI=1 EXPO_UNSTABLE_HEADLESS=1 EXPO_NO_TELEMETRY=1 yarn start --port "$METRO_PORT"
 ) >"$LOG_DIR/metro.log" 2>&1 &
 METRO_PID=$!
 for _ in $(seq 1 90); do
@@ -86,13 +86,25 @@ if ! curl -sf "http://127.0.0.1:${METRO_PORT}/status" >/dev/null \
   cat "$LOG_DIR/metro.log" >&2 || true
   exit 1
 fi
+if grep -Eiq 'Failed to install.*(React Native )?DevTools|standalone.*DevTools.*fail' "$LOG_DIR/metro.log"; then
+  echo "Standalone React Native DevTools installation failed" >&2
+  exit 1
+fi
 
 "$ADB" uninstall "$PACKAGE_ID" >/dev/null 2>&1 || true
 "$ADB" install -r "$APK"
 
+if ! (cd "$ROOT/e2e" && npx appium driver list --installed) \
+  | grep -q 'uiautomator2'; then
+  echo "==> Install Appium UiAutomator2 driver"
+  (
+    cd "$ROOT/e2e"
+    npx appium driver install uiautomator2
+  ) >"$LOG_DIR/appium-driver-install.log" 2>&1
+fi
+
 (
   cd "$ROOT/e2e"
-  npx appium driver install uiautomator2 >/dev/null 2>&1 || true
   npx appium --address 127.0.0.1 --port "$APPIUM_PORT"
 ) >"$LOG_DIR/appium.log" 2>&1 &
 APPIUM_PID=$!
@@ -195,5 +207,8 @@ node "$ROOT/bin/rn-coverage.js" \
   --output "$JS_DIR" \
   --cwd "$APP_DIR" \
   --nyc-config "$APP_DIR/nyc.config.js" 2>&1 | tee "$LOG_DIR/js-report.log"
+
+node "$ROOT/scripts/ci/assert-js-lcov.js" "$JS_DIR/lcov.info" \
+  2>&1 | tee "$LOG_DIR/js-assert.log"
 
 echo "OK android jacoco=$COV_DIR/jacocoTestReport.xml js=$JS_DIR/lcov.info"

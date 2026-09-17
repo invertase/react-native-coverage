@@ -19,8 +19,9 @@ jobs:
     name: semantic-release
     if: github.repository == 'invertase/react-native-coverage'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 130
     permissions:
+      actions: read # inspect exact-SHA CI result
       contents: write # git tags + GitHub Releases
       issues: write # comment on released issues
       pull-requests: write # comment on released PRs
@@ -37,6 +38,13 @@ jobs:
 
       - name: Build package
         run: yarn prepare
+
+      - name: Require successful exact-SHA CI
+        # Waits up to 120 minutes for a completed ci.yml run on this dispatch SHA.
+        # Failure and cancellation conclusions fail the release.
+        run: bash scripts/ci/wait-for-ci.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
         run: yarn semantic-release

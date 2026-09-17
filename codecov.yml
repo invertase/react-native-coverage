@@ -1,0 +1,32 @@
+ignore:
+  - fixtures/**
+
+flags:
+  unit-js:
+    carryforward: false
+  e2e-ios-dynamic:
+    carryforward: false
+  e2e-ios-static:
+    carryforward: false
+  e2e-android:
+    carryforward: false
+
+coverage:
+  status:
+    project:
+      unit-js:
+        target: 1%
+        flags:
+          - unit-js
+      e2e-ios-dynamic:
+        target: 1%
+        flags:
+          - e2e-ios-dynamic
+      e2e-ios-static:
+        target: 1%
+        flags:
+          - e2e-ios-static
+      e2e-android:
+        target: 1%
+        flags:
+          - e2e-android

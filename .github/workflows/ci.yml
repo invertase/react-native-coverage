@@ -44,15 +44,29 @@ jobs:
       - name: CLI help smoke
         run: node bin/rn-coverage.js --help
 
+      - name: Release CI guard self-test
+        run: WAIT_FOR_CI_SELF_TEST=1 bash scripts/ci/wait-for-ci.sh
+
+      - name: JS coverage assertion self-test
+        run: node scripts/ci/assert-js-lcov.js --self-test
+
+      - name: Check Expo dependency compatibility
+        run: yarn workspace react-native-coverage-example exec expo install --check
+
+      - name: Dependabot Codecov notice
+        if: github.actor == 'dependabot[bot]'
+        run: echo '## ⚠️ Codecov upload errors are nonblocking for Dependabot only' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload unit coverage (Codecov)
-        if: always()
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/unit/lcov.info
+          disable_search: true
           flags: unit-js
           name: unit-js
-          fail_ci_if_error: false
+          fail_ci_if_error: ${{ github.actor != 'dependabot[bot]' }}
 
   # Primary: bare RN + USE_FRAMEWORKS=dynamic → CoverageFixture.framework +
   # non-zero fixture LCOV. Expo cannot host this cell (React-Core force-static).
@@ -86,8 +100,20 @@ jobs:
           # (same pattern as RNFB tests_e2e_ios.yml).
           xcrun simctl list
 
-      - name: CocoaPods
-        run: gem install cocoapods -N || true
+      - name: Setup Ruby
+        # https://github.com/ruby/setup-ruby/releases
+        uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        with:
+          ruby-version: '3.3'
+
+      - name: Install frozen Ruby dependencies
+        # https://github.com/nick-fields/retry/releases
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v3.0.2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: BUNDLE_FROZEN=true bundle install
 
       - name: Appium e2e + coverage assert
         run: yarn e2e:ios:dynamic
@@ -103,15 +129,20 @@ jobs:
             artifacts/e2e/logs/dynamic/**
           if-no-files-found: warn
 
+      - name: Dependabot Codecov notice
+        if: github.actor == 'dependabot[bot]'
+        run: echo '## ⚠️ Codecov upload errors are nonblocking for Dependabot only' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload to Codecov
-        if: always()
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/dynamic/lcov.info,artifacts/e2e/coverage/dynamic/js/lcov.info
+          disable_search: true
           flags: e2e-ios-dynamic
           name: e2e-ios-dynamic
-          fail_ci_if_error: false
+          fail_ci_if_error: ${{ github.actor != 'dependabot[bot]' }}
 
   # Expo example: staticlib merge (honest static cell). Still asserts fixture hits.
   e2e-ios-static:
@@ -133,6 +164,21 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Setup Ruby
+        # https://github.com/ruby/setup-ruby/releases
+        uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        with:
+          ruby-version: '3.3'
+
+      - name: Install frozen Ruby dependencies
+        # https://github.com/nick-fields/retry/releases
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v3.0.2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: BUNDLE_FROZEN=true bundle install
 
       - name: Xcode / simulator diagnostics
         run: |
@@ -161,15 +207,20 @@ jobs:
             artifacts/e2e/logs/static/**
           if-no-files-found: warn
 
+      - name: Dependabot Codecov notice
+        if: github.actor == 'dependabot[bot]'
+        run: echo '## ⚠️ Codecov upload errors are nonblocking for Dependabot only' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload to Codecov
-        if: always()
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/static/lcov.info,artifacts/e2e/coverage/static/js/lcov.info
+          disable_search: true
           flags: e2e-ios-static
           name: e2e-ios-static
-          fail_ci_if_error: false
+          fail_ci_if_error: ${{ github.actor != 'dependabot[bot]' }}
 
   e2e-android:
     name: e2e / Android (Expo)
@@ -221,12 +272,17 @@ jobs:
             artifacts/e2e/logs/android/**
           if-no-files-found: warn
 
+      - name: Dependabot Codecov notice
+        if: github.actor == 'dependabot[bot]'
+        run: echo '## ⚠️ Codecov upload errors are nonblocking for Dependabot only' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload to Codecov
-        if: always()
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/android/jacocoTestReport.xml,artifacts/e2e/coverage/android/js/lcov.info
+          disable_search: true
           flags: e2e-android
           name: e2e-android
-          fail_ci_if_error: false
+          fail_ci_if_error: ${{ github.actor != 'dependabot[bot]' }}
