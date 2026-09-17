@@ -8,7 +8,7 @@ Operator guide for publishing `react-native-coverage`. Releases are **manual onl
 |------|--------|
 | GitHub repo | `invertase/react-native-coverage` (see [Create the GitHub repo](#create-the-github-repo) if missing) |
 | Conventional Commits | PR titles enforced by `.github/workflows/pr-title.yml`; squash-merge preferred |
-| Green `main` | Unit + Appium e2e CI from `.github/workflows/ci.yml` |
+| Green dispatch SHA | Unit + Appium e2e CI from `.github/workflows/ci.yml` |
 | First npm publish | **Human OTP bootstrap** — first human publish, not this release scaffolding |
 | npm OIDC | Configure Trusted Publisher **after** bootstrap; release workflow already has `id-token: write` |
 
@@ -73,8 +73,12 @@ Do **not** run a real publish until human bootstrap + OIDC Trusted Publisher set
 
 1. Ensure `main` is green.
 2. GitHub → **Actions** → **Release** → **Run workflow** (branch `main`).
-3. Confirm the run created a GitHub Release + npm version with provenance.
-4. If nothing published: semantic-release found no releasable commits since the last tag (expected when only `chore`/`docs` landed).
+3. The workflow polls the CI workflow for the exact release dispatch SHA. It
+   proceeds only when that run is completed successfully; another commit's
+   green run is never accepted. Failure, cancellation, or the bounded timeout
+   stops before semantic-release.
+4. Confirm the run created a GitHub Release + npm version with provenance.
+5. If nothing published: semantic-release found no releasable commits since the last tag (expected when only `chore`/`docs` landed).
 
 ## First human publish and OIDC setup (do not do via this workflow alone)
 

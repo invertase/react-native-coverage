@@ -33,6 +33,15 @@ rn-coverage js report \
 
 NYC is configured with `sourceMap: true` and `exclude-after-remap: true` so LCOV `SF:` paths point at **TypeScript** sources (not only the Metro-transformed JS line map). Ship a `nyc.config.js` next to the harness (see `example/nyc.config.js`).
 
+Both harness configs include their entrypoint/App source and the shared
+`example/fixture-lib/src` workspace. CI runs `assert-js-lcov.js` after NYC and
+requires non-zero records for both the harness and fixture library; merely
+creating an LCOV file is not sufficient.
+
 ## Codecov
 
-CI uploads unit LCOV, e2e native LCOV/Jacoco, and e2e JS LCOV with distinct `flags` (`unit-js`, `e2e-ios-dynamic`, …). Wire `CODECOV_TOKEN` (or Codecov GitHub app OIDC) on the repo for private uploads; public repos may work tokenless depending on Codecov settings.
+CI uploads unit LCOV, e2e native LCOV/Jacoco, and e2e JS LCOV with distinct
+flags (`unit-js`, `e2e-ios-dynamic`, `e2e-ios-static`, and `e2e-android`).
+Reports are explicit; automatic report search is disabled. Configure the
+repository-specific `CODECOV_TOKEN`. Upload failures are blocking except for
+Dependabot, and uploads run only after successful report generation.

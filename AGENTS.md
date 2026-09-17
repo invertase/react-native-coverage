@@ -9,4 +9,5 @@
 - Release: Conventional Commits + semantic-release via `.github/workflows/release.yml` (`workflow_dispatch` only); PR titles via `.github/workflows/pr-title.yml`. Operator docs: `docs/releasing.md`. No `@semantic-release/git`.
 - Validation: `yarn`, `yarn prepare`, `yarn test` / `yarn test:coverage`, `yarn typecheck`, CLI `--help`.
 - Appium e2e for this package is in-scope when the task asks; do not use RNFB slot2/3. Prefer a non-RNFB simulator (e.g. iPhone 17 on Xcode 26).
-- Full OKF / work-queue governance may land later; keep ephemeral notes under `.agents/` (gitignored).
+- Public repository execution and validation guidance lives in `okf-bundle/`;
+  keep ephemeral work notes under `.agents/` (gitignored).
