@@ -29,10 +29,14 @@ function iosCapabilities() {
     'appium:deviceName': process.env.IOS_DEVICE_NAME || 'iPhone 17',
     'appium:platformVersion': process.env.IOS_PLATFORM_VERSION,
     'appium:bundleId': requiredEnv('IOS_BUNDLE_ID'),
-    'appium:noReset': true,
+    'appium:noReset': false,
+    'appium:forceAppLaunch': true,
+    'appium:skipLogCapture': true,
+    'appium:showXcodeLog': true,
     'appium:newCommandTimeout': 240,
-    'appium:wdaLaunchTimeout': 120000,
-    'appium:wdaConnectionTimeout': 240000,
+    // Cold WDA startup has taken 3–5 minutes on hosted macOS runners.
+    'appium:wdaLaunchTimeout': 600000,
+    'appium:wdaConnectionTimeout': 600000,
     // Headless simctl boot + Appium UI restart hung at 120s on GHA; give the
     // post-open Simulator.app boot path room (matches RNFB-style long wait).
     'appium:simulatorStartupTimeout': 300000,

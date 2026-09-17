@@ -25,8 +25,13 @@ runs:
 
     - name: Install dependencies
       if: steps.yarn-cache.outputs.cache-hit != 'true'
-      run: yarn install --immutable
-      shell: bash
+      # https://github.com/nick-fields/retry/releases
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v3.0.2
+      with:
+        timeout_minutes: 15
+        max_attempts: 3
+        retry_wait_seconds: 10
+        command: yarn install --immutable
 
     - name: Cache dependencies
       if: steps.yarn-cache.outputs.cache-hit != 'true'
