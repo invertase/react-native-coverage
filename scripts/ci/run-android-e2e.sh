@@ -94,13 +94,19 @@ fi
 "$ADB" uninstall "$PACKAGE_ID" >/dev/null 2>&1 || true
 "$ADB" install -r "$APK"
 
-if ! (cd "$ROOT/e2e" && npx appium driver list --installed) \
-  | grep -q 'uiautomator2'; then
+if ! (cd "$ROOT/e2e" && npx appium driver list --installed 2>&1) \
+  | grep -qi 'uiautomator2'; then
   echo "==> Install Appium UiAutomator2 driver"
-  (
+  if ! (
     cd "$ROOT/e2e"
     npx appium driver install uiautomator2
-  ) >"$LOG_DIR/appium-driver-install.log" 2>&1
+  ) >"$LOG_DIR/appium-driver-install.log" 2>&1; then
+    if ! grep -qi 'already installed' "$LOG_DIR/appium-driver-install.log"; then
+      echo "FAILED: appium driver install uiautomator2" >&2
+      tail -n 80 "$LOG_DIR/appium-driver-install.log" >&2 || true
+      exit 1
+    fi
+  fi
 fi
 
 (

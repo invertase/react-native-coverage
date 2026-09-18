@@ -65,9 +65,10 @@ autolinking still pass to `JSON.parse`. The Expo static cell wipes generated
 `example/ios/Pods` and `Podfile.lock` before install so a leftover lock cannot
 disagree with `Pods/Local Podspecs` (e.g. ExpoModulesWorklets after an SDK
 patch). Yarn, simulator boot, Bundler, and transient pod operations use
-bounded retries. Expo-backed Metro runs set
-`EXPO_UNSTABLE_HEADLESS=1`; completed logs must not contain a standalone React
-Native DevTools installation failure.
+bounded retries. Appium driver install is idempotent: list output is
+checked on stdout+stderr, and “already installed” is success. Expo-backed
+Metro runs set `EXPO_UNSTABLE_HEADLESS=1`; completed logs must not contain
+a standalone React Native DevTools installation failure.
 
 Live Appium cells are CI/operator-gated. They are not Detox jobs, must not use
 RNFB slot2/slot3, and should use a dedicated iPhone 17 simulator on Xcode 26.
