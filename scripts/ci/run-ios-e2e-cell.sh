@@ -83,6 +83,34 @@ retry_logged() {
   return "$rc"
 }
 
+# `appium driver list` often prints to stderr; grepping stdout only misses an
+# already-installed driver and then `driver install` fails.
+ensure_appium_driver() {
+  local name="$1"
+  local list_log="$LOG_DIR/appium-driver-list.log"
+  local install_log="$LOG_DIR/appium-driver-install.log"
+  (
+    cd "$ROOT/e2e"
+    npx appium driver list --installed
+  ) >"$list_log" 2>&1 || true
+  if grep -qi "$name" "$list_log"; then
+    return 0
+  fi
+  echo "==> Install Appium ${name} driver"
+  if (
+    cd "$ROOT/e2e"
+    npx appium driver install "$name"
+  ) >"$install_log" 2>&1; then
+    return 0
+  fi
+  if grep -qi 'already installed' "$install_log"; then
+    return 0
+  fi
+  echo "FAILED: appium driver install ${name} (full log: $install_log)" >&2
+  tail -n 80 "$install_log" >&2 || true
+  return 1
+}
+
 cd "$ROOT"
 yarn prepare
 
@@ -270,11 +298,7 @@ xcrun simctl spawn "$IOS_UDID" launchctl setenv RCT_METRO_PORT "$METRO_PORT" 2>/
 
 if [[ "${SKIP_APPIUM_INSTALL:-0}" != "1" ]]; then
   echo "==> Ensure Appium XCUITest driver"
-  if ! (cd "$ROOT/e2e" && npx appium driver list --installed) \
-    | grep -q 'xcuitest'; then
-    run_logged "$LOG_DIR/appium-driver-install.log" \
-      bash -lc "cd '$ROOT/e2e' && npx appium driver install xcuitest"
-  fi
+  ensure_appium_driver xcuitest
 fi
 
 echo "==> Prebuild WebDriverAgent"
