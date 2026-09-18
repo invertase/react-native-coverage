@@ -50,6 +50,9 @@ jobs:
       - name: JS coverage assertion self-test
         run: node scripts/ci/assert-js-lcov.js --self-test
 
+      - name: JS coverage instrumentation scope
+        run: node scripts/ci/assert-istanbul-scope.js
+
       - name: Check Expo dependency compatibility
         run: yarn workspace react-native-coverage-example exec expo install --check
 
