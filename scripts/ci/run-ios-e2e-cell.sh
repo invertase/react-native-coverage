@@ -94,7 +94,10 @@ if [[ "$CELL" == "dynamic" ]]; then
   WORKSPACE="$APP_DIR/ios/CoverageDynamic.xcworkspace"
   SCHEME="CoverageDynamic"
   DERIVED="$APP_DIR/ios/build/DerivedData"
-  POD_CMD=(bash -lc "cd '$APP_DIR/ios' && USE_FRAMEWORKS=dynamic RCT_NEW_ARCH_ENABLED=1 bundle exec pod install")
+  POD_CMD=(
+    env BUNDLE_GEMFILE="$ROOT/Gemfile"
+    bash -c "cd '$APP_DIR/ios' && USE_FRAMEWORKS=dynamic RCT_NEW_ARCH_ENABLED=1 bundle exec pod install"
+  )
 elif [[ "$CELL" == "static" ]]; then
   APP_DIR="$ROOT/example"
   BUNDLE_ID="com.example.coverage"
@@ -103,7 +106,13 @@ elif [[ "$CELL" == "static" ]]; then
   WORKSPACE="$APP_DIR/ios/CoverageExample.xcworkspace"
   SCHEME="CoverageExample"
   DERIVED="$APP_DIR/ios/build/DerivedData"
-  POD_CMD=(bash -lc "cd '$APP_DIR/ios' && bundle exec pod install")
+  # Expo ios/ is generated and gitignored. Stale Podfile.lock vs Pods/Local
+  # Podspecs (e.g. ExpoModulesWorklets after an SDK patch) makes `pod install`
+  # fail; retries of the same command cannot recover.
+  POD_CMD=(
+    env BUNDLE_GEMFILE="$ROOT/Gemfile"
+    bash -c "cd '$APP_DIR/ios' && rm -rf Pods Podfile.lock && bundle exec pod install"
+  )
 else
   echo "Unknown CELL=$CELL (expected dynamic|static)" >&2
   exit 1
