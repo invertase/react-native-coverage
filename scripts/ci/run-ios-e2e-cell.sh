@@ -121,7 +121,8 @@ if [[ "$CELL" == "dynamic" ]]; then
   CONFIG_PATH="$APP_DIR/react-native-coverage.config.js"
   WORKSPACE="$APP_DIR/ios/CoverageDynamic.xcworkspace"
   SCHEME="CoverageDynamic"
-  DERIVED="$APP_DIR/ios/build/DerivedData"
+  # Same folder GMA uses via `react-native run-ios --buildFolder build`.
+  DERIVED="$APP_DIR/ios/build"
   POD_CMD=(
     env BUNDLE_GEMFILE="$ROOT/Gemfile"
     bash -c "cd '$APP_DIR/ios' && USE_FRAMEWORKS=dynamic RCT_NEW_ARCH_ENABLED=1 bundle exec pod install"
@@ -133,7 +134,7 @@ elif [[ "$CELL" == "static" ]]; then
   CONFIG_PATH="$APP_DIR/react-native-coverage.config.js"
   WORKSPACE="$APP_DIR/ios/CoverageExample.xcworkspace"
   SCHEME="CoverageExample"
-  DERIVED="$APP_DIR/ios/build/DerivedData"
+  DERIVED="$APP_DIR/ios/build"
   # Expo ios/ is generated and gitignored. Stale Podfile.lock vs Pods/Local
   # Podspecs (e.g. ExpoModulesWorklets after an SDK patch) makes `pod install`
   # fail; retries of the same command cannot recover.
@@ -178,10 +179,11 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
     build
 fi
 
-if [[ ! -d "$APP_PATH" ]]; then
-  echo "Missing app at $APP_PATH" >&2
+if [[ ! -d "$APP_PATH" || ! -f "$APP_PATH/Info.plist" ]]; then
+  echo "Missing complete app bundle at $APP_PATH" >&2
   exit 1
 fi
+echo "iOS app (xcodebuild + Appium): $APP_PATH"
 
 # Prove dynamic frameworks for primary cell
 if [[ "$CELL" == "dynamic" ]]; then
@@ -423,6 +425,8 @@ for attempt in $(seq 1 "$IOS_E2E_ATTEMPTS"); do
     xcrun simctl bootstatus "$IOS_UDID"
     curl -sf "http://127.0.0.1:${METRO_PORT}/status"
     test -d "$IOS_WDA_APP_PATH"
+    echo "ios_app_path=$IOS_APP_PATH"
+    echo "ios_wda_derived=$IOS_WDA_DERIVED_DATA_PATH"
     echo "appium_port=$APPIUM_PORT wda_port=$WDA_PORT"
     lsof -nP -iTCP:"$APPIUM_PORT" -sTCP:LISTEN || true
     lsof -nP -iTCP:"$WDA_PORT" -sTCP:LISTEN || true

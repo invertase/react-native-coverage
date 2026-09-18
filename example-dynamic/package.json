@@ -7,7 +7,7 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "pod:install": "cd ios && USE_FRAMEWORKS=dynamic RCT_NEW_ARCH_ENABLED=1 bundle exec pod install",
-    "ios:build": "xcodebuild -workspace ios/CoverageDynamic.xcworkspace -scheme CoverageDynamic -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build/DerivedData CODE_SIGNING_ALLOWED=NO build"
+    "ios:build": "xcodebuild -workspace ios/CoverageDynamic.xcworkspace -scheme CoverageDynamic -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build"
   },
   "dependencies": {
     "coverage-fixture": "workspace:*",

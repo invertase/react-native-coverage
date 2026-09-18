@@ -29,7 +29,11 @@ function iosCapabilities() {
     'appium:deviceName': process.env.IOS_DEVICE_NAME || 'iPhone 17',
     'appium:platformVersion': process.env.IOS_PLATFORM_VERSION,
     'appium:bundleId': requiredEnv('IOS_BUNDLE_ID'),
+    // Exact product of this cell's `-derivedDataPath <app>/ios/build`. Never
+    // omit this and fall back to a bundle already on the simulator.
+    'appium:app': requiredEnv('IOS_APP_PATH'),
     'appium:noReset': false,
+    'appium:enforceAppInstall': true,
     'appium:forceAppLaunch': true,
     'appium:skipLogCapture': true,
     'appium:showXcodeLog': true,
@@ -51,12 +55,10 @@ function iosCapabilities() {
   if (process.env.IOS_UDID) {
     caps['appium:udid'] = process.env.IOS_UDID;
   }
-  if (process.env.IOS_APP_PATH) {
-    caps['appium:app'] = process.env.IOS_APP_PATH;
-  }
   // Reuse the prebuilt WDA via `xcodebuild test-without-building`.
   // `usePreinstalledWDA` launches the runner with plain simctl, which dies at
   // dyld(6) on a simulator because the XCTest frameworks are not injected.
+  // This derivedDataPath is WDA-only — never the app's ios/build folder.
   if (process.env.IOS_WDA_DERIVED_DATA_PATH) {
     caps['appium:usePrebuiltWDA'] = true;
     caps['appium:derivedDataPath'] = process.env.IOS_WDA_DERIVED_DATA_PATH;
@@ -72,15 +74,16 @@ function androidCapabilities() {
     'appium:deviceName': process.env.ANDROID_DEVICE_NAME || 'Android Emulator',
     'appium:appPackage': requiredEnv('ANDROID_APP_PACKAGE'),
     'appium:appActivity': process.env.ANDROID_APP_ACTIVITY || '.MainActivity',
-    'appium:noReset': true,
+    'appium:app': requiredEnv('ANDROID_APP_PATH'),
+    'appium:noReset': false,
+    // Cached AVDs keep a previous APK at the same versionCode; skip-install
+    // then runs stale native against fresh Metro JS.
+    'appium:enforceAppInstall': true,
     'appium:newCommandTimeout': 240,
     // Give Metro first-bundle time after adb reverse (seen ~9s on GHA).
     'appium:appWaitDuration': 120000,
   };
 
-  if (process.env.ANDROID_APP_PATH) {
-    caps['appium:app'] = process.env.ANDROID_APP_PATH;
-  }
   if (process.env.ANDROID_UDID) {
     caps['appium:udid'] = process.env.ANDROID_UDID;
   }
