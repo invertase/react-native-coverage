@@ -34,12 +34,19 @@ Scripts: `scripts/ci/`. Specs: `e2e/`.
   `connectionRetryCount: 0`. Between attempts, delete sessions, terminate and
   reinstall the app, stop Appium, clear Appium/WDA ports, and reuse prebuilt
   WDA. Never overlap `POST /session`.
-- Keep `noReset: false`, `forceAppLaunch: true`, and do not pre-launch the app
-  with `simctl launch`.
+- Keep `noReset: false`, `enforceAppInstall: true`, `forceAppLaunch: true`,
+  and do not pre-launch the app with `simctl launch`.
+- Build iOS with `-derivedDataPath <harness>/ios/build` and pass that
+  product as required `appium:app`
+  (`…/ios/build/Build/Products/Debug-iphonesimulator/<App>.app`). Never
+  discover `~/Library/Developer/Xcode/DerivedData` and never launch by
+  bundle id alone. WDA uses a **separate** derived-data folder
+  (`artifacts/e2e/wda-derived-data`).
 
 ## Android / Metro / Appium
 
 - Debug APK loads JS from Metro. Emulator `localhost` is **not** the host — run **`adb reverse tcp:8081 tcp:8081`** (or your Metro port) before launching the app, or the bundle never loads and Appium never sees UI.
+- Point Appium at the exact Gradle product (`android/app/build/outputs/apk/debug/app-debug.apk`) with `noReset: false` and `enforceAppInstall: true`. Cached AVDs otherwise keep a same-`versionCode` APK and skip the reinstall.
 - React Native `testID` on Android maps to **`resource-id`**, not accessibility id. Prefer a shared helper (`byTestId`) that uses `UiSelector().resourceId(...)` on Android and `~id` on iOS.
 - Allow a long `appWaitDuration` for first Metro bundle.
 
