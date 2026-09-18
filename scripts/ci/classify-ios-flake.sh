@@ -10,7 +10,13 @@ LOGS=(/dev/null "$ARTIFACT_DIR"/*.log)
 [[ -f "$ARTIFACT_DIR/../metro.log" ]] && LOGS+=("$ARTIFACT_DIR/../metro.log")
 [[ -f "$ARTIFACT_DIR/../simulator.log" ]] && LOGS+=("$ARTIFACT_DIR/../simulator.log")
 
-if grep -Eiq 'ECONNREFUSED|Could not proxy command|socket hang up' "${LOGS[@]}" 2>/dev/null; then
+if grep -Eq 'WebDriverAgentRunner\.xctrunner.*domain:dyld' "${LOGS[@]}" 2>/dev/null; then
+  classification="wda-runner-dyld-launch-failure"
+  evidence="WDA runner exited at dyld; launch it via xcodebuild (usePrebuiltWDA + derivedDataPath), not plain simctl"
+elif grep -q 'never listened within' "${LOGS[@]}" 2>/dev/null; then
+  classification="wda-never-listened"
+  evidence="See wda-readiness.log in $ARTIFACT_DIR"
+elif grep -Eiq 'ECONNREFUSED|Could not proxy command|socket hang up' "${LOGS[@]}" 2>/dev/null; then
   classification="appium-or-wda-transport"
 elif grep -Eiq 'xcodebuild.*(timed out|failed)|WebDriverAgent.*(timed out|not reachable)' "${LOGS[@]}" 2>/dev/null; then
   classification="wda-startup"

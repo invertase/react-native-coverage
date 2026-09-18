@@ -34,9 +34,15 @@ function iosCapabilities() {
     'appium:skipLogCapture': true,
     'appium:showXcodeLog': true,
     'appium:newCommandTimeout': 240,
-    // Cold WDA startup has taken 3–5 minutes on hosted macOS runners.
-    'appium:wdaLaunchTimeout': 600000,
-    'appium:wdaConnectionTimeout': 600000,
+    // WDA is prebuilt, so launch is a `test-without-building` run. Keep the
+    // budget above cold startup but low enough that a dead runner fails the
+    // attempt instead of stalling the whole cell.
+    'appium:wdaLaunchTimeout': Number(
+      process.env.IOS_WDA_LAUNCH_TIMEOUT || 240000
+    ),
+    'appium:wdaConnectionTimeout': Number(
+      process.env.IOS_WDA_LAUNCH_TIMEOUT || 240000
+    ),
     // Headless simctl boot + Appium UI restart hung at 120s on GHA; give the
     // post-open Simulator.app boot path room (matches RNFB-style long wait).
     'appium:simulatorStartupTimeout': 300000,
@@ -48,9 +54,12 @@ function iosCapabilities() {
   if (process.env.IOS_APP_PATH) {
     caps['appium:app'] = process.env.IOS_APP_PATH;
   }
-  if (process.env.IOS_WDA_APP_PATH) {
-    caps['appium:usePreinstalledWDA'] = true;
-    caps['appium:prebuiltWDAPath'] = process.env.IOS_WDA_APP_PATH;
+  // Reuse the prebuilt WDA via `xcodebuild test-without-building`.
+  // `usePreinstalledWDA` launches the runner with plain simctl, which dies at
+  // dyld(6) on a simulator because the XCTest frameworks are not injected.
+  if (process.env.IOS_WDA_DERIVED_DATA_PATH) {
+    caps['appium:usePrebuiltWDA'] = true;
+    caps['appium:derivedDataPath'] = process.env.IOS_WDA_DERIVED_DATA_PATH;
   }
 
   return caps;

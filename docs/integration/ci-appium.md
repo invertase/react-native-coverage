@@ -21,8 +21,15 @@ Scripts: `scripts/ci/`. Specs: `e2e/`.
   timeouts above cold WDA's observed 3–5 minute range.
 - List sims once before the run (`xcrun simctl list`) — same deflake idea as RNFB.
 - Prefetch the iOS Metro bundle after `/status` is ready. Prebuild WDA once
-  under `artifacts/e2e/wda-derived-data`, install it, and set
-  `IOS_WDA_APP_PATH`; do not place DerivedData in `e2e/node_modules`.
+  under `artifacts/e2e/wda-derived-data` and hand it to the driver as
+  `usePrebuiltWDA` + `derivedDataPath`; do not place DerivedData in
+  `e2e/node_modules`.
+- Do **not** use `usePreinstalledWDA` on a simulator. It launches the
+  `.xctrunner` app with plain `simctl`, which exits immediately at
+  `domain:dyld(6) code:1` because the XCTest frameworks are never injected;
+  Appium then polls `127.0.0.1:8100/status` until `wdaLaunchTimeout`. A
+  readiness watchdog (`IOS_WDA_READY_DEADLINE`, default 180s) aborts the
+  attempt once the WDA port is provably dead.
 - Use two or three serialized outer WDIO attempts and
   `connectionRetryCount: 0`. Between attempts, delete sessions, terminate and
   reinstall the app, stop Appium, clear Appium/WDA ports, and reuse prebuilt
