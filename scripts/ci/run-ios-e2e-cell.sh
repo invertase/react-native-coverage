@@ -314,6 +314,7 @@ run_logged "$LOG_DIR/wda-xcodebuild.log" xcodebuild \
   -derivedDataPath "$WDA_DERIVED" \
   CODE_SIGNING_ALLOWED=NO \
   build-for-testing
+export IOS_WDA_DERIVED_DATA_PATH="$WDA_DERIVED"
 export IOS_WDA_APP_PATH="$WDA_DERIVED/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app"
 if [[ ! -d "$IOS_WDA_APP_PATH" ]]; then
   echo "Missing prebuilt WDA app: $IOS_WDA_APP_PATH" >&2
@@ -359,6 +360,33 @@ stop_appium() {
   APPIUM_PID=""
   kill_port_listeners "$APPIUM_PORT"
   kill_port_listeners "$WDA_PORT"
+}
+
+# A WDA runner that dies on launch (e.g. dyld(6) when XCTest frameworks are
+# missing) leaves Appium polling /status until wdaLaunchTimeout. Fail the
+# attempt as soon as the WDA port is provably dead, and record why.
+watch_wda_readiness() {
+  local attempt_dir="$1"
+  local wdio_pid="$2"
+  local deadline="${IOS_WDA_READY_DEADLINE:-180}"
+  local waited=0
+  while kill -0 "$wdio_pid" 2>/dev/null; do
+    if lsof -nP -iTCP:"$WDA_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0
+    fi
+    if ((waited >= deadline)); then
+      {
+        echo "wda_port=${WDA_PORT} never listened within ${deadline}s"
+        grep -a -E "WebDriverAgentRunner\.xctrunner.*(RBSProcessExitStatus|Process exited|dyld)" \
+          "$LOG_DIR/simulator.log" | tail -n 20
+      } >"$attempt_dir/wda-readiness.log" 2>&1
+      echo "WDA never listened on ${WDA_PORT}; aborting attempt (see $attempt_dir/wda-readiness.log)" >&2
+      kill -TERM "$wdio_pid" 2>/dev/null || true
+      return 1
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
 }
 
 start_appium() {
@@ -417,8 +445,14 @@ for attempt in $(seq 1 "$IOS_E2E_ATTEMPTS"); do
     (
       cd "$ROOT/e2e"
       yarn test:ios
-    ) >"$ATTEMPT_DIR/wdio.log" 2>&1
+    ) >"$ATTEMPT_DIR/wdio.log" 2>&1 &
+    WDIO_PID=$!
+    watch_wda_readiness "$ATTEMPT_DIR" "$WDIO_PID" &
+    WATCH_PID=$!
+    wait "$WDIO_PID"
     WDIO_RC=$?
+    kill "$WATCH_PID" 2>/dev/null || true
+    wait "$WATCH_PID" 2>/dev/null
     set -e
   fi
 
@@ -432,6 +466,8 @@ for attempt in $(seq 1 "$IOS_E2E_ATTEMPTS"); do
     tail -n 60 "$ATTEMPT_DIR/wdio.log" >&2 || true
   fi
   capture_failure_state "$ATTEMPT_DIR"
+  grep -a -E "WebDriverAgentRunner\.xctrunner|com\.apple\.dt\.XCTest" "$LOG_DIR/simulator.log" \
+    | tail -n 200 >"$ATTEMPT_DIR/wda-simulator-excerpt.log" 2>/dev/null || true
   xcrun simctl list devices | grep -F "$IOS_UDID" >"$ATTEMPT_DIR/simulator-state.txt" || true
   lsof -nP -iTCP:"$APPIUM_PORT" -iTCP:"$WDA_PORT" >"$ATTEMPT_DIR/port-state.txt" || true
   cp "$LOG_DIR/metro-prefetch.log" "$ATTEMPT_DIR/" || true
