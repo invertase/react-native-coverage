@@ -1,23 +1,20 @@
+const path = require('path');
+
 /**
- * Keep this aligned with example/nyc.config.js. The fixture workspace is
- * outside this harness cwd but is bundled and exercised by the dynamic cell.
+ * Keep this aligned with example/nyc.config.js and both babel configs: the
+ * fixture workspace is outside this harness, so instrumentation and remap are
+ * both rooted at the monorepo. SF: paths come out workspace-relative.
  */
 module.exports = {
   'check-coverage': false,
   'include': [
-    'App.tsx',
-    'index.js',
-    'src/**/*.{ts,tsx,js,jsx}',
-    '../example/fixture-lib/src/**/*.{ts,tsx}',
-    'coverage-fixture/**/*.{ts,tsx}',
-    'node_modules/coverage-fixture/**/*.{ts,tsx}',
+    'example-dynamic/App.tsx',
+    'example-dynamic/index.js',
+    'example-dynamic/src/**/*.{ts,tsx,js,jsx}',
+    'example/fixture-lib/src/**/*.{ts,tsx}',
   ],
-  'exclude': [
-    '**/node_modules/**',
-    '!**/node_modules/coverage-fixture/**',
-    '**/__tests__/**',
-  ],
-  'cwd': __dirname,
+  'exclude': ['**/node_modules/**', '**/__tests__/**'],
+  'cwd': path.resolve(__dirname, '..'),
   'sourceMap': true,
   'exclude-after-remap': true,
   'instrument': false,

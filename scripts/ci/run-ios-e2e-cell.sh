@@ -534,7 +534,7 @@ node "$ROOT/bin/rn-coverage.js" \
   js report \
   --input "$JS_DIR/coverage-final.json" \
   --output "$JS_DIR" \
-  --cwd "$APP_DIR" \
+  --cwd "$ROOT" \
   --nyc-config "$APP_DIR/nyc.config.js" 2>&1 | tee "$LOG_DIR/js-report.log"
 
 node "$ROOT/scripts/ci/assert-js-lcov.js" "$JS_DIR/lcov.info" \

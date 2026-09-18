@@ -27,7 +27,7 @@ rn-coverage js pull --platform ios --device <udid> --output coverage/js
 rn-coverage js report \
   --input coverage/js/coverage-final.json \
   --output coverage/js \
-  --cwd example \
+  --cwd . \
   --nyc-config example/nyc.config.js
 ```
 
@@ -37,6 +37,22 @@ Both harness configs include their entrypoint/App source and the shared
 `example/fixture-lib/src` workspace. CI runs `assert-js-lcov.js` after NYC and
 requires non-zero records for both the harness and fixture library; merely
 creating an LCOV file is not sufficient.
+
+### Instrumentation scope is workspace-rooted
+
+`coverage-fixture` is a yarn workspace symlink, so Metro resolves it to the
+realpath `example/fixture-lib/src/*.ts` — outside `example-dynamic/`. A
+default-configured `babel-plugin-istanbul` roots `test-exclude` at the babel
+cwd and silently skips everything outside it, so the bundle builds and the e2e
+passes while the LCOV quietly omits the shared library.
+
+Both harnesses therefore pass explicit `cwd`/`include` options to
+`babel-plugin-istanbul` and set matching `cwd`/`include` in `nyc.config.js`,
+all rooted at the monorepo. `SF:` paths are workspace-relative
+(`example/fixture-lib/src/index.ts`, `example-dynamic/App.tsx`) in every cell.
+`scripts/ci/assert-istanbul-scope.js` runs in the `unit` job and fails if
+either harness stops instrumenting the fixture sources — a device-free guard,
+since the e2e cells themselves cannot catch a scope regression.
 
 ## Codecov
 

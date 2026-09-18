@@ -36,6 +36,10 @@ if (process.argv[2] === '--self-test') {
   const fixtureWorkspace =
     'SF:App.tsx\nDA:1,1\nend_of_record\n' +
     'SF:/repo/example/fixture-lib/src/index.ts\nDA:1,2\nend_of_record\n';
+  // Both cells now report workspace-relative paths.
+  const fixtureWorkspaceRelative =
+    'SF:example-dynamic/App.tsx\nDA:1,1\nend_of_record\n' +
+    'SF:example/fixture-lib/src/index.ts\nDA:1,2\nend_of_record\n';
   const fixturePackageRemap =
     'SF:/repo/example-dynamic/src/App.tsx\nDA:1,1\nend_of_record\n' +
     'SF:/repo/node_modules/coverage-fixture/src/index.ts\nDA:1,2\nend_of_record\n';
@@ -47,6 +51,7 @@ if (process.argv[2] === '--self-test') {
     'SF:/repo/example/fixture-lib/src/index.ts\nDA:1,0\nend_of_record\n';
   if (
     missingExpectations(fixtureWorkspace).length !== 0 ||
+    missingExpectations(fixtureWorkspaceRelative).length !== 0 ||
     missingExpectations(fixturePackageRemap).length !== 0 ||
     missingExpectations(fixturePackageRoot).length !== 0 ||
     missingExpectations(emptyFixture)
