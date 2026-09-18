@@ -59,8 +59,13 @@ state, process/port state, and flake classification are failure-only.
 ## Reproducible setup
 
 CI installs the root `Gemfile.lock` with `BUNDLE_FROZEN=true` and runs
-`bundle exec pod install`. Yarn, simulator boot, Bundler, and transient pod
-operations use bounded retries. Expo-backed Metro runs set
+`bundle exec pod install`. The Gemfile pins `json` to `2.21.2` because `json`
+3.x dropped `quirks_mode`, which CocoaPods 1.17 / ActiveSupport 7.2 / Expo
+autolinking still pass to `JSON.parse`. The Expo static cell wipes generated
+`example/ios/Pods` and `Podfile.lock` before install so a leftover lock cannot
+disagree with `Pods/Local Podspecs` (e.g. ExpoModulesWorklets after an SDK
+patch). Yarn, simulator boot, Bundler, and transient pod operations use
+bounded retries. Expo-backed Metro runs set
 `EXPO_UNSTABLE_HEADLESS=1`; completed logs must not contain a standalone React
 Native DevTools installation failure.
 
