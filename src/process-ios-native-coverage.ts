@@ -289,7 +289,7 @@ export function chooseLlvmArch(
 }
 
 /** Resolve the `-arch` value for a given app binary, honoring overrides. */
-function resolveLlvmArch(
+export function resolveLlvmArch(
   appBinary: string,
   configArch: string,
   override?: string
@@ -302,7 +302,7 @@ function resolveLlvmArch(
 }
 
 /** `['-arch=arm64']` when an arch is selected, otherwise `[]`. */
-function buildArchArgs(arch: string | undefined): string[] {
+export function buildArchArgs(arch: string | undefined): string[] {
   return arch ? [`-arch=${arch}`] : [];
 }
 
