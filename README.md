@@ -4,22 +4,21 @@
   </a>
 </p>
 
-<h1 align="center">react-native-coverage</h1>
-
-<p align="center">
-  <strong>Native code coverage for React Native — iOS <em>and</em> Android — without touching the native stuff.</strong>
-</p>
-
-<p align="center">
-  A TurboModule flushes real device coverage. A CLI pulls it, turns it into LCOV / Jacoco,<br/>
-  and fails your CI when the numbers are empty. That's it.
-</p>
+<h1 align="center">Code coverage for React Native — Typescript, iOS, and Android — without touching the native stuff.</h1>
 
 <p align="center">
   <a href="https://app.codecov.io/gh/invertase/react-native-coverage"><img src="https://codecov.io/gh/invertase/react-native-coverage/branch/main/graph/badge.svg" alt="Codecov" /></a>
   <a href="https://docs.page/invertase/react-native-coverage"><img src="https://img.shields.io/badge/docs-docs.page-E8983A" alt="Docs" /></a>
   <img src="https://img.shields.io/badge/architecture-New%20Arch%20only-2D303A" alt="New Architecture only" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0" /></a>
+</p>
+
+<p align="center">
+  Install it into a dedicated test / e2e harness app (<a href="https://docs.page/invertase/react-native-coverage/pattern-c">Pattern&nbsp;C</a>) — never your shipping app.
+</p>
+
+<p align="center">
+  A TurboModule flushes real device coverage; the CLI pulls it, <strong>merges</strong> every framework's <code>.profraw</code> and the app binary into clean LCOV&nbsp;/&nbsp;Jacoco, and remaps your instrumented JS line-for-line back to TypeScript. Use that as a signal in your development loop or CI to gate development iterations or CI pass/fail.
 </p>
 
 <p align="center">
@@ -49,15 +48,11 @@ JS ran. In an agentic world where a model can rewrite your `.mm` file and swear 
 **that missing evidence is a real problem.** Coverage is the backpressure. It's how you — or
 your agent — prove the native path executed, not just the mock.
 
-`react-native-coverage` makes that evidence a one-liner:
+`react-native-coverage` makes that evidence a one-liner: flush from the TurboModule, `rn-coverage pull`
+to merge the scattered native counters and remap your JS back to TypeScript, then `rn-coverage assert`
+to turn "did the native path actually run?" into a pass/fail signal for your dev loop or CI.
 
-```
-Coverage.flush()  →  rn-coverage pull  →  LCOV / Jacoco  →  rn-coverage assert (fail CI if empty)
-```
-
-No Podfile regex. No profraw archaeology. No Gradle spelunking. New Architecture only,
-[Pattern C](https://docs.page/invertase/react-native-coverage/pattern-c) (dedicated test
-apps only — never your shipping app).
+No Podfile regex. No profraw archaeology. No Gradle spelunking.
 
 ---
 
