@@ -1,6 +1,6 @@
 {
   "name": "react-native-coverage",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Native code coverage tooling for React Native (TurboModule + CLI + Expo config plugin)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

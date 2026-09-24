@@ -1,3 +1,10 @@
+## [0.2.2](https://github.com/invertase/react-native-coverage/compare/v0.2.1...v0.2.2) (2026-09-24)
+
+### Bug Fixes
+
+* **ios:** select an arch when exporting coverage from universal binaries ([cacf5ef](https://github.com/invertase/react-native-coverage/commit/cacf5ef224660e60df04c142b509e77b3331ea07))
+* take the expected Expo 57.0.25 patch ([c25c381](https://github.com/invertase/react-native-coverage/commit/c25c381afc72fe7e1f39328f3d8f5dc5d2e765ea))
+
 # Changelog
 
 All notable changes to this project are documented here.
