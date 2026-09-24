@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.page/schema.json",
   "name": "react-native-coverage",
-  "description": "Native code coverage for React Native — iOS and Android — without touching the native stuff. TurboModule flush → LCOV/Jacoco → assert in CI.",
+  "description": "Native code coverage for React Native - iOS and Android - without touching the native stuff. TurboModule flush, LCOV/Jacoco reports, assert in CI.",
   "favicon": "/assets/brand/invertase-honeycomb.png",
   "logo": {
     "light": "/assets/brand/invertase-honeycomb.png",

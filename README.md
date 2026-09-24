@@ -22,6 +22,16 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0" /></a>
 </p>
 
+<p align="center">
+  <strong>Integrate with your favorite tools</strong> — for visibility, or as a workflow quality gate during development.
+</p>
+
+<p align="center">
+  <a href="https://app.codecov.io/gh/invertase/react-native-coverage">
+    <img src="./docs/assets/codecov/dashboard.png" alt="Codecov dashboard for react-native-coverage — overall coverage, 3-month trend, sunburst graph, and the native code tree" width="900" />
+  </a>
+</p>
+
 ---
 
 ## Why this exists
