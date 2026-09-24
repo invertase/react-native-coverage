@@ -10,9 +10,9 @@ rn-coverage android pull [--device <serial>] [--output <dir>] [--retries <n>]
 rn-coverage android report [--android-dir <path>] [--jacoco-xml <path>]
 
 rn-coverage ios pull --device <udid> [--output <dir>]
-rn-coverage ios export --derived-data <path> [--configuration Debug] [--app-name <name>] [--output <path>]
-rn-coverage ios report --derived-data <path> [--profdata <path>] [--output-dir <path>]
-rn-coverage ios summary --derived-data <path> [--profdata <path>]
+rn-coverage ios export --derived-data <path> [--configuration Debug] [--app-name <name>] [--output <path>] [--arch <arch>]
+rn-coverage ios report --derived-data <path> [--profdata <path>] [--output-dir <path>] [--arch <arch>]
+rn-coverage ios summary --derived-data <path> [--profdata <path>] [--arch <arch>]
 
 rn-coverage assert [--platform ios|android|all] [--lcov <path>] [--jacoco-xml <path>]
 
@@ -45,6 +45,20 @@ Commands that enforce the guard:
 | `ios export` | No `.profraw`, or LCOV has no expected path hits with `LH` > 0 (default: `packages/`) |
 | `ios report` / `ios summary` | Missing `profdata` (run `ios export` first) |
 | `assert` | Dedicated post-pipeline check for LCOV and/or Jacoco XML |
+
+## Universal (multi-arch) binaries
+
+`llvm-cov` cannot read coverage from a **universal** (multi-arch) Mach-O without an
+`-arch` selector, so a simulator build that carries both `arm64` and `x86_64` slices
+would otherwise export **0%**. `ios export`, `ios report`, and `ios summary` handle this
+automatically:
+
+- **Thin** binary (one slice) → no `-arch` is passed (unchanged behavior).
+- **Universal** binary → the host architecture is selected when present, else the first slice.
+- Override with `--arch <arch>` (e.g. `--arch arm64`) or `ios.arch` in config.
+
+Thin simulator builds (Xcode's default `ONLY_ACTIVE_ARCH=YES` for Debug) never needed this;
+the selection only kicks in for universal builds.
 
 `rn-coverage assert` is the package-owned replacement for one-off shell presence scripts. Prefer wiring this CLI (exit 2) into consumer CI rather than maintaining a permanent bespoke assert.
 

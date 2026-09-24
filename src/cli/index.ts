@@ -174,6 +174,10 @@ async function main(): Promise<void> {
         .option('--configuration <name>', 'Xcode configuration', 'Debug')
         .option('--app-name <name>', 'App product name')
         .option('--output <path>', 'LCOV output path', 'coverage/ios/lcov.info')
+        .option(
+          '--arch <arch>',
+          'llvm-cov -arch for universal binaries (default: auto-detect)'
+        )
         .action(async (opts, cmd) => {
           const rootOpts = rootOptsFrom(cmd);
           const config = applyStrictOverride(
@@ -186,6 +190,7 @@ async function main(): Promise<void> {
               configuration: opts.configuration,
               appName: opts.appName ?? config.app.iosProductName,
               output: opts.output,
+              arch: opts.arch,
               config,
             });
           } catch (error) {
@@ -210,6 +215,10 @@ async function main(): Promise<void> {
           'HTML output directory',
           'coverage/ios/html'
         )
+        .option(
+          '--arch <arch>',
+          'llvm-cov -arch for universal binaries (default: auto-detect)'
+        )
         .action(async (opts, cmd) => {
           const rootOpts = rootOptsFrom(cmd);
           const config = applyStrictOverride(
@@ -223,6 +232,7 @@ async function main(): Promise<void> {
               appName: opts.appName,
               profdata: opts.profdata,
               outputDir: opts.outputDir,
+              arch: opts.arch,
               config,
             });
           } catch (error) {
@@ -242,6 +252,10 @@ async function main(): Promise<void> {
           'Merged profdata path',
           'coverage/ios/profdata'
         )
+        .option(
+          '--arch <arch>',
+          'llvm-cov -arch for universal binaries (default: auto-detect)'
+        )
         .action(async (opts, cmd) => {
           const rootOpts = rootOptsFrom(cmd);
           const config = applyStrictOverride(
@@ -254,6 +268,7 @@ async function main(): Promise<void> {
               configuration: opts.configuration,
               appName: opts.appName,
               profdata: opts.profdata,
+              arch: opts.arch,
               config,
             });
           } catch (error) {
