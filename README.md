@@ -64,13 +64,7 @@ This repository **proves its own thesis on Codecov, live on `main`** — includi
 | [`unit-js`](https://app.codecov.io/gh/invertase/react-native-coverage) | Jest unit (JS/TS) | **52.6%** |
 
 Those numbers come from an actual iOS Simulator and Android emulator running the harness apps
-under Appium — not from a mock. Browse them yourself:
-
-**The iOS native directory, with per-file line coverage** — [`ios/` on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage/tree/main/ios)
-
-<p align="center">
-  <img src="./docs/assets/codecov/ios-tree.png" alt="Codecov file explorer showing ios/ native directory with line coverage for Coverage.mm, CoverageProfile.mm and CoverageConfig.h" width="900" />
-</p>
+under Appium — not from a mock. Browse the [`ios/` native directory on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage/tree/main/ios) yourself.
 
 **The TurboModule itself, line by line** — [`ios/Coverage.mm` on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage/blob/main/ios/Coverage.mm)
 Real Objective-C++ (`flush()`, `dumpJsCoverage`, `getTurboModule`), green where a device
