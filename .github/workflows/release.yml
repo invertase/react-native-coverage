@@ -32,6 +32,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # Admin PAT (repo secret GH_TOKEN) so @semantic-release/git can push the
+          # version + CHANGELOG commit past main's branch protection — same pattern
+          # as invertase/react-native-google-mobile-ads and react-native-firebase.
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Git identity for the release commit
+        run: |
+          git config user.name 'Invertase Publisher'
+          git config user.email 'oss@invertase.io'
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -49,8 +58,14 @@ jobs:
       - name: Release
         run: yarn semantic-release
         env:
-          # Default Actions token is enough for tags/releases when contents:write.
+          # Admin PAT (repo secret) for both GitHub Releases AND the
+          # @semantic-release/git commit-back push past branch protection.
           # No NPM_TOKEN: OIDC trusted publishing after first human publish + Trusted Publisher setup.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           # Avoid setup-node writing an .npmrc that breaks OIDC (semantic-release docs).
           NPM_CONFIG_PROVENANCE: 'true'
+          # @semantic-release/npm runs `npm version`; in a Yarn workspaces monorepo
+          # npm cannot parse `workspace:` protocols when relinking. Only bump the
+          # version field. (Matches RNGMA's publish workflow.)
+          npm_config_workspaces_update: 'false'
