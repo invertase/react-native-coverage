@@ -1,21 +1,14 @@
 ---
-title: react-native-coverage
-description: Native code coverage for React Native - iOS and Android - without touching the native stuff.
+title: Code coverage for React Native - Typescript, iOS, and Android - without touching the native stuff.
+description: Flush real device coverage from a TurboModule, merge it into LCOV / Jacoco, remap TypeScript line-for-line, and gate your dev loop or CI.
 ---
 
-**Native code coverage for React Native — iOS _and_ Android — without touching the native stuff.**
+Install it into a dedicated test / e2e harness app ([Pattern C](/pattern-c)) — never your shipping app.
 
-A TurboModule flushes real device coverage. A CLI pulls it, turns it into LCOV / Jacoco, and
-fails your CI when the numbers are empty. That's the whole product.
-
-```
-Coverage.flush()  →  rn-coverage pull  →  LCOV / Jacoco  →  rn-coverage assert (fail CI if empty)
-```
-
-<Info>
-  New Architecture / TurboModule only. Install into a **dedicated test / e2e harness app**
-  ([Pattern C](/pattern-c)) — never your shipping app.
-</Info>
+A TurboModule flushes real device coverage; the CLI pulls it, **merges** every framework's `.profraw` and the
+app binary into clean LCOV / Jacoco, and remaps your instrumented JS line-for-line back to TypeScript — smoothing
+the rough edges of modern TypeScript development by handling the line-accurate source mapping for you. Use that as
+a signal in your development loop or CI to gate development iterations or CI pass/fail.
 
 **Integrate with your favorite tools** — for visibility, or as a workflow quality gate during development.
 
