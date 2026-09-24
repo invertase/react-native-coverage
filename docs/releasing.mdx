@@ -65,12 +65,19 @@ Examples: `feat: …`, `fix: …`, `docs: …`, `chore: …`. Breaking changes: 
 ### Branch protection and the commit-back step
 
 `@semantic-release/git` pushes the release commit to `main`, which is branch-protected. The
-default `GITHUB_TOKEN` cannot bypass required pull requests, so the release will fail at the
-git step unless the workflow runs with a token allowed to bypass protection. Options:
+default `GITHUB_TOKEN` cannot bypass required pull requests, so the release fails at the git
+step unless the workflow runs with a privileged token.
 
-- Add the release bot (or a GitHub App / fine-grained PAT) to **"Allow specified actors to
-  bypass required pull requests"** on the `main` ruleset, and expose that token to the workflow.
-- The commit message carries `[skip ci]` so the pushed release commit does not re-trigger CI.
+**Setup (one-time, repo admin):** add a repository secret **`GH_TOKEN`** = an admin
+Personal Access Token with `repo` scope, owned by a user allowed to bypass `main`'s protection.
+The `release.yml` workflow already consumes it (on `actions/checkout` and as `GH_TOKEN` /
+`GITHUB_TOKEN` for `semantic-release`). This mirrors how
+[`react-native-google-mobile-ads`](https://github.com/invertase/react-native-google-mobile-ads/blob/main/.github/workflows/publish.yml)
+(semantic-release) and
+[`react-native-firebase`](https://github.com/invertase/react-native-firebase/blob/main/.github/workflows/publish.yml)
+(Lerna) do it — both carry `GH_TOKEN` as a **repo secret**.
+
+The commit message carries `[skip ci]` so the pushed release commit does not re-trigger CI.
 
 Because tags now point at the release commit (not the source commit), a checkout at any `v*`
 tag has a truthful `package.json` and `CHANGELOG.md`. **Never delete a released tag** — it is
