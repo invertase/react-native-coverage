@@ -1,24 +1,106 @@
 {
+  "$schema": "https://docs.page/schema.json",
   "name": "react-native-coverage",
-  "description": "Native + JS/TS coverage tooling for React Native test apps",
+  "description": "Native code coverage for React Native — iOS and Android — without touching the native stuff. TurboModule flush → LCOV/Jacoco → assert in CI.",
+  "favicon": "/assets/brand/invertase-honeycomb.png",
+  "logo": {
+    "light": "/assets/brand/invertase-honeycomb.png",
+    "dark": "/assets/brand/invertase-honeycomb.png"
+  },
+  "theme": {
+    "primary": "#C97A2B",
+    "primaryDark": "#F5B454"
+  },
+  "social": {
+    "x": "@invertaseio",
+    "github": "invertase/react-native-coverage",
+    "website": "https://invertase.io"
+  },
+  "content": {
+    "zoomImages": true
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": true,
+    "showGitHubCard": true,
+    "links": [
+      {
+        "title": "Codecov",
+        "href": "https://app.codecov.io/gh/invertase/react-native-coverage"
+      },
+      {
+        "title": "Get started",
+        "href": "/app-developers",
+        "cta": true
+      }
+    ]
+  },
+  "agent": {
+    "questions": [
+      "How do I add native coverage to an Expo test app?",
+      "How is this different from Codecov's JavaScript coverage?",
+      "Why does rn-coverage assert exit 2, and how do I wire it into CI?",
+      "How do library maintainers get iOS native coverage from their test app?"
+    ]
+  },
   "sidebar": [
     {
       "group": "Getting Started",
-      "pages": ["index", "pattern-c"]
+      "pages": [
+        { "title": "Introduction", "href": "/", "icon": "house" },
+        { "title": "Why native coverage", "href": "/why", "icon": "lightbulb" },
+        { "title": "Pattern C", "href": "/pattern-c", "icon": "shield-halved" }
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        {
+          "title": "App developers (Expo & RN CLI)",
+          "href": "/app-developers",
+          "icon": "mobile-screen"
+        },
+        {
+          "title": "Library maintainers",
+          "href": "/library-maintainers",
+          "icon": "cubes"
+        },
+        { "title": "Agents", "href": "/agents", "icon": "robot" }
+      ]
     },
     {
       "group": "Integration",
       "pages": [
-        "integration/android",
-        "integration/ios",
-        "integration/js",
-        "integration/e2e-timing",
-        "integration/ci-appium"
+        {
+          "title": "Android",
+          "href": "/integration/android",
+          "icon": "android"
+        },
+        { "title": "iOS", "href": "/integration/ios", "icon": "apple" },
+        {
+          "title": "JavaScript / TypeScript",
+          "href": "/integration/js",
+          "icon": "js"
+        },
+        {
+          "title": "E2E timing",
+          "href": "/integration/e2e-timing",
+          "icon": "clock"
+        },
+        {
+          "title": "CI (Appium)",
+          "href": "/integration/ci-appium",
+          "icon": "gears"
+        }
       ]
     },
     {
       "group": "Reference",
-      "pages": ["cli", "config", "releasing"]
+      "pages": [
+        { "title": "CLI", "href": "/cli", "icon": "terminal" },
+        { "title": "Config", "href": "/config", "icon": "sliders" },
+        { "title": "Releasing", "href": "/releasing", "icon": "rocket" }
+      ]
     }
   ]
 }
