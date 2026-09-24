@@ -30,6 +30,7 @@
     "app.plugin.js",
     "cocoapods",
     "docs",
+    "!docs/assets",
     "docs.json",
     "react-native-coverage.config.js.example",
     "*.podspec",

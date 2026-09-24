@@ -1,0 +1,105 @@
+---
+title: Agents
+description: A paste-ready prompt to wire react-native-coverage into a repo, plus the exact CI contract an agent must satisfy so native coverage can't silently regress.
+---
+
+This page is written for coding agents (Cursor, Claude, Codex, …) and the humans directing them.
+It gives a paste-ready integration prompt and the non-negotiable contract that makes the result
+trustworthy.
+
+## Paste-ready prompt
+
+Give this to your agent **before** it edits Gradle files or Podfiles by hand:
+
+```text
+Integrate react-native-coverage into this repo's dedicated React Native test /
+e2e harness app only (Pattern C — never the production app package.json).
+
+Constraints:
+- New Architecture / TurboModule only
+- Follow https://docs.page/invertase/react-native-coverage
+- Prefer the Expo config plugin when the harness is Expo; otherwise use the bare
+  Gradle + CocoaPods Ruby helpers from the integration docs
+- Wire libraryProjectMatchers / frameworkNamePrefixes for every native library
+  we need hits from
+- Add CI steps that pull coverage and fail with rn-coverage assert (exit 2)
+  when hits are empty
+- Do not invent product-app install paths; keep the package out of the shipping app
+
+After install: yarn/npm add react-native-coverage in the harness, apply the plugin or
+manual hooks, prebuild / pod install as needed, then show me the exact CI commands
+to run and what green looks like.
+```
+
+## The rules an agent must not break
+
+<Warning>
+  **Pattern C is load-bearing.** `react-native-coverage` goes into a dedicated test/e2e harness
+  app only. Never add it to a production app's `package.json`. Autolinking scans dependencies, so
+  `devDependencies` alone does not keep the TurboModule out of a shipped app.
+</Warning>
+
+- **New Architecture only.** Do not attempt Old-Architecture bridging shims.
+- **Do not regex-edit the Podfile for LLVM flags.** Use the shipped
+  `cocoapods/coverage_post_install.rb` helper (`apply_post_install!`). Under Expo keep
+  `forceDynamicFrameworks: false`; set it `true` only on bare RN hosts whose React builds as
+  dynamic frameworks.
+- **Land Android `.ec` under the app `buildDir`.** `rn-coverage android pull` stages it where
+  Jacoco's `fileTree` can see it; pulling only into `artifacts/` leaves `jacocoTestReport` empty.
+- **Pin CI Actions by full commit SHA.**
+
+## The CI contract
+
+The whole point is a pipeline that **cannot pass with empty native coverage**. The sequence:
+
+<Steps>
+  <Step title="Run instrumented e2e, then flush">
+    Start Metro with `RN_COVERAGE_JS=1` for JS coverage, run the suite, and call
+    `Coverage.flush()` once at teardown.
+  </Step>
+  <Step title="Pull + report">
+    ```sh
+    rn-coverage android pull && rn-coverage android report
+    rn-coverage ios pull && rn-coverage ios export && rn-coverage ios report
+    ```
+  </Step>
+  <Step title="Assert (the gate)">
+    ```sh
+    rn-coverage assert
+    ```
+  </Step>
+</Steps>
+
+### Exit codes are the contract
+
+| Code | Meaning |
+|------|---------|
+| **0** | Success (or soft-mode empty artifact with a warning) |
+| **1** | Unexpected error / bad invocation / tooling failure |
+| **2** | Strict empty-hit or missing artifact — the CI presence guard tripped |
+
+<Error>
+  In strict mode (the CI default), missing or empty expected hits **exit 2**. An agent must treat
+  exit 2 as a hard failure to fix — never suppress it, never fall back to `--no-strict` in CI to
+  "make it green." A green pipeline that produced no native hits is a false negative.
+</Error>
+
+Configure which paths/packages must be non-empty via `assert.lcovPathIncludes` and
+`assert.jacocoPackageIncludes` in [config](/config). Wire the real CLI into CI rather than
+maintaining a bespoke "did anything get covered?" shell script.
+
+## Verify like the reference repo
+
+The canonical, working example is this repository itself — its
+[Codecov dashboard](https://app.codecov.io/gh/invertase/react-native-coverage) carries separate
+`e2e-ios-dynamic`, `e2e-ios-static`, and `e2e-android` flags with real device hits. Reproduce that
+shape and you're done.
+
+<CardGroup cols={2}>
+  <Card title="CLI reference" icon="terminal" href="/cli">
+    Commands, flags, and the strict/assert contract in full.
+  </Card>
+  <Card title="Config reference" icon="sliders" href="/config">
+    `assert.*` matchers and default artifact paths.
+  </Card>
+</CardGroup>

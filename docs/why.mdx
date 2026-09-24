@@ -1,0 +1,120 @@
+---
+title: Why native coverage
+description: React Native is cross-platform, but coverage tooling stops at the JS bundle. Native code — especially iOS — is a black box. Here's why that matters, and the proof it can be fixed.
+---
+
+## The blind spot
+
+React Native ships two apps in one codebase, but almost every coverage report you've ever seen
+covers **one language**: JavaScript. Jest, Istanbul, and the green badge on your README all
+measure the bundle.
+
+Meanwhile the code that makes a React Native app actually _native_ — the Objective-C++ in your
+TurboModules, the Swift in your app delegate, the Kotlin behind your Android package — runs on a
+real device during your e2e suite and then **disappears without a trace**.
+
+<Warning>
+  iOS native coverage in particular is a black box. LLVM writes `.profraw` counters into a
+  sandboxed simulator container, `__llvm_profile` never flushes unless you ask it to, and dynamic
+  frameworks keep their coverage tables in their own LINKEDIT segments. Wiring that by hand is
+  miserable, so almost nobody does.
+</Warning>
+
+The result: teams ship native modules behind a green checkmark that only ever proved the
+**JavaScript** ran. The native branch — the error path, the platform quirk, the thing the agent
+just rewrote — may never have executed under test, and nothing tells you.
+
+## Why now
+
+In an agentic workflow, a model can confidently rewrite your `.mm` file and assure you it's
+tested. Coverage is the backpressure that keeps that honest. It is the difference between
+"the mock returned the value I asserted" and "the native code path physically executed on a
+device." Without native coverage, an agent — or a human — can hand-wave past the hardest,
+most platform-specific code in the app.
+
+`react-native-coverage` turns that missing evidence into a one-liner:
+
+```
+Coverage.flush()  →  rn-coverage pull  →  LCOV / Jacoco  →  rn-coverage assert (fail CI if empty)
+```
+
+No Podfile regex. No profraw archaeology. No Gradle spelunking.
+
+## Show, don't tell
+
+This repository **proves its own thesis on Codecov, live on `main`** — including the hard part, iOS.
+
+| Flag | What ran | Coverage |
+|------|----------|---------:|
+| [`e2e-ios-dynamic`](https://app.codecov.io/gh/invertase/react-native-coverage) | iOS native, dynamic frameworks (the hard case) | **90.6%** |
+| [`e2e-android`](https://app.codecov.io/gh/invertase/react-native-coverage) | Android native (Emma → Jacoco) | **81.7%** |
+| [`e2e-ios-static`](https://app.codecov.io/gh/invertase/react-native-coverage) | iOS native, static libraries | **63.1%** |
+| [`unit-js`](https://app.codecov.io/gh/invertase/react-native-coverage) | Jest unit (JS/TS) | **52.6%** |
+
+These numbers come from an actual iOS Simulator and Android emulator running the harness apps
+under Appium — not from a mock.
+
+### The iOS native directory, with per-file line coverage
+
+[`ios/` on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage/tree/main/ios)
+
+![Codecov file explorer showing the ios/ native directory with line coverage for Coverage.mm, CoverageProfile.mm and CoverageConfig.h](/assets/codecov/ios-tree.png)
+
+### The TurboModule itself, line by line
+
+[`ios/Coverage.mm` on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage/blob/main/ios/Coverage.mm)
+
+Real Objective-C++ — `flush()`, `dumpJsCoverage`, `getTurboModule` — shown green where a device
+executed it, at **71.88%**:
+
+![Codecov line-by-line view of ios/Coverage.mm at 71.88 percent, Objective-C++ TurboModule code shown covered and partially covered](/assets/codecov/ios-coverage-mm.png)
+
+### The whole picture
+
+[Repository dashboard on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage)
+
+![Codecov dashboard for react-native-coverage showing overall coverage, trend, sunburst graph and the native code tree](/assets/codecov/dashboard.png)
+
+## The gap this closes
+
+[**React Native Firebase**](https://github.com/invertase/react-native-firebase), one of the
+most-installed libraries in the ecosystem, already depends on `react-native-coverage` in its
+dedicated `tests/` app. Its Codecov shows `android-native` **live at 65.9%** — while the
+`ios-native` flag still reads **`0.0%`** today.
+
+The slot is wired. The Android native hits are real. The iOS native number is the hardest half,
+and the rollout to turn that zero into a number is exactly what this package drives.
+
+<Success>
+  If a flagship library's iOS native coverage is still catching up, yours has had no path at all —
+  until now. This repository already shows iOS-dynamic at 90.6%; the tooling to reproduce that
+  anywhere is what ships here.
+</Success>
+
+## Used in production by
+
+Both [**React Native Firebase**](https://github.com/invertase/react-native-firebase) and
+[**React Native Google Mobile Ads**](https://github.com/invertase/react-native-google-mobile-ads)
+flush real device coverage through the `react-native-coverage` TurboModule from their
+[Pattern C](/pattern-c) test apps:
+
+<p>
+  <a href="https://github.com/invertase/react-native-firebase">
+    <img src="/assets/consumers/react-native-firebase.png" alt="React Native Firebase" height="56" />
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/invertase/react-native-google-mobile-ads">
+    <img src="/assets/consumers/react-native-google-mobile-ads.svg" alt="React Native Google Mobile Ads" height="56" />
+  </a>
+</p>
+
+## Ready?
+
+<CardGroup cols={2}>
+  <Card title="I build an app" icon="mobile-screen" href="/app-developers">
+    Wire native coverage into your Expo or RN CLI test app.
+  </Card>
+  <Card title="I maintain a library" icon="cubes" href="/library-maintainers">
+    Prove your library's native code runs, in unit tests and a test app.
+  </Card>
+</CardGroup>

@@ -1,0 +1,150 @@
+---
+title: Library maintainers
+description: Prove your React Native library's native code actually runs — both in unit tests and in a dedicated test app — and gate it in CI with per-flag Codecov uploads.
+---
+
+If you maintain a React Native library with native code, "tested" should mean your
+**Objective-C++/Swift and Kotlin actually executed** — not just that a JS mock returned the value
+you asserted. This page shows the two layers that get you there, and how this very repository
+wires them (it's the reference implementation).
+
+<Info>
+  `react-native-coverage` is itself a monorepo with a library at the root and harness apps in
+  `example/` (Expo) and `example-dynamic/` (bare, dynamic frameworks). Copy that shape.
+</Info>
+
+## The two layers
+
+| Layer | Tooling | Artifact | Codecov flag (suggested) |
+|-------|---------|----------|--------------------------|
+| Unit (package) | Jest `--coverage` | `coverage/unit/lcov.info` | `unit-js` |
+| E2e JS/TS | `babel-plugin-istanbul` + NYC remap | `coverage/js/lcov.info` | `e2e-js` |
+| E2e native iOS | TurboModule flush → llvm-cov | `lcov.info` | `e2e-ios-dynamic`, `e2e-ios-static` |
+| E2e native Android | TurboModule flush → Jacoco | `jacocoTestReport.xml` | `e2e-android` |
+
+## Layer 1 — unit tests
+
+Your existing Jest suite already exercises the JS/TS surface. Turn on coverage and upload it:
+
+```sh
+jest --coverage   # → coverage/unit/lcov.info
+codecov -f coverage/unit/lcov.info -F unit-js
+```
+
+<Info>
+  Unit tests can't prove native code ran — they run in Node with the native module mocked. That's
+  what the test-app layer is for. Keep both; they measure different things.
+</Info>
+
+## Layer 2 — a dedicated test app
+
+Add a harness app to your monorepo (Pattern C) that renders and exercises your library's native
+surface, then drive it with an e2e runner (Appium, Detox, Maestro …).
+
+<Steps>
+  <Step title="Point coverage at your library's native names">
+    In the harness, configure the plugin (Expo) or helpers (bare) with **your** library's
+    identifiers:
+
+    ```json
+    {
+      "expo": {
+        "plugins": [
+          [
+            "react-native-coverage",
+            {
+              "libraryProjectMatchers": ["my-lib"],
+              "frameworkNamePrefixes": ["MyLib"],
+              "enableAndroidCoverage": true
+            }
+          ]
+        ]
+      }
+    }
+    ```
+
+    `libraryProjectMatchers` matches your Android Gradle library project(s); `frameworkNamePrefixes`
+    matches your iOS framework(s) so their LINKEDIT sections get flushed.
+  </Step>
+
+  <Step title="Instrument JS for the e2e bundle (optional but recommended)">
+    Load `babel-plugin-istanbul` only when `RN_COVERAGE_JS=1`, and root `test-exclude` at the
+    monorepo so a symlinked workspace library is actually instrumented:
+
+    <Warning>
+      A default `babel-plugin-istanbul` roots `test-exclude` at the babel cwd and silently skips
+      anything outside it — including a yarn-workspace library resolved to its realpath. Pass
+      explicit `cwd`/`include` in both the babel plugin options and `nyc.config.js`, rooted at the
+      monorepo, or your shared library will quietly vanish from the LCOV. See
+      [JS / TypeScript](/integration/js) for the exact setup and the device-free guard that catches
+      a scope regression.
+    </Warning>
+  </Step>
+
+  <Step title="Flush at teardown">
+    ```ts
+    import Coverage from 'react-native-coverage';
+    await Coverage.flush(); // native buffers + global.__coverage__ when instrumented
+    ```
+  </Step>
+
+  <Step title="Pull, report, assert">
+    ```sh
+    rn-coverage android pull && rn-coverage android report
+    rn-coverage ios pull && rn-coverage ios export && rn-coverage ios report
+    rn-coverage assert
+    ```
+  </Step>
+</Steps>
+
+## Make "empty" fail — for _your_ package specifically
+
+A green e2e that produced an empty LCOV is worse than no coverage: it's a false negative waiting
+to rot. Configure `assert` to require non-zero hits in **your** library's paths, not just any file:
+
+```js
+// react-native-coverage.config.js
+module.exports = {
+  strict: true, // exit 2 on empty artifacts (CI default)
+  assert: {
+    lcovPathIncludes: ['packages/my-lib'],      // ≥1 iOS LCOV SF: must match
+    jacocoPackageIncludes: ['com.my.lib'],       // ≥1 Jacoco package must have LINE hits
+    defaultLcovPath: 'coverage/ios/lcov.info',
+    defaultJacocoXmlPath: 'coverage/android/jacocoTestReport.xml',
+  },
+};
+```
+
+See [Config](/config) for every key.
+
+## Per-flag Codecov uploads
+
+Upload each cell under its own flag and disable automatic report search so results stay explicit
+(mirrors this repo's [`codecov.yml`](https://github.com/invertase/react-native-coverage/blob/main/codecov.yml)):
+
+```sh
+codecov -f coverage/unit/lcov.info               -F unit-js
+codecov -f coverage/ios-dynamic/lcov.info        -F e2e-ios-dynamic
+codecov -f coverage/ios-static/lcov.info         -F e2e-ios-static
+codecov -f coverage/android/jacocoTestReport.xml -F e2e-android
+```
+
+That flag split is what produces a dashboard where iOS-dynamic, iOS-static, and Android each carry
+their own number — exactly like the [proof on this repo](/why#proof-live-on-main).
+
+## Reference implementation
+
+<CardGroup cols={2}>
+  <Card title="This repo on GitHub" icon="github" href="https://github.com/invertase/react-native-coverage">
+    Library at root, `example/` + `example-dynamic/` harnesses, `e2e/` specs, CI scripts.
+  </Card>
+  <Card title="This repo on Codecov" icon="chart-line" href="https://app.codecov.io/gh/invertase/react-native-coverage">
+    The per-flag dashboard your setup should reproduce.
+  </Card>
+  <Card title="CI (Appium) notes" icon="gears" href="/integration/ci-appium">
+    Pitfalls the reference CI already solved.
+  </Card>
+  <Card title="JS / TypeScript" icon="js" href="/integration/js">
+    Istanbul + NYC source-map remap and the scope guard.
+  </Card>
+</CardGroup>
