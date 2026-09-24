@@ -121,6 +121,9 @@ if [[ "$CELL" == "dynamic" ]]; then
   CONFIG_PATH="$APP_DIR/react-native-coverage.config.js"
   WORKSPACE="$APP_DIR/ios/CoverageDynamic.xcworkspace"
   SCHEME="CoverageDynamic"
+  # Thin (active-arch) build keeps the primary cell fast; the llvm-cov -arch
+  # selection is dogfooded by the static cell's universal build instead.
+  ONLY_ACTIVE_ARCH_SETTING="ONLY_ACTIVE_ARCH=YES"
   # Same folder GMA uses via `react-native run-ios --buildFolder build`.
   DERIVED="$APP_DIR/ios/build"
   POD_CMD=(
@@ -135,6 +138,11 @@ elif [[ "$CELL" == "static" ]]; then
   WORKSPACE="$APP_DIR/ios/CoverageExample.xcworkspace"
   SCHEME="CoverageExample"
   DERIVED="$APP_DIR/ios/build"
+  # Build a universal (arm64 + x86_64) simulator binary so this cell dogfoods
+  # the llvm-cov -arch selection in `rn-coverage ios export`. Without that fix a
+  # fat Mach-O exports 0% LCOV and the strict assert (exit 2) fails this cell —
+  # i.e. this is the in-repo regression guard for universal-binary coverage.
+  ONLY_ACTIVE_ARCH_SETTING="ONLY_ACTIVE_ARCH=NO"
   # Expo ios/ is generated and gitignored. Stale Podfile.lock vs Pods/Local
   # Podspecs (e.g. ExpoModulesWorklets after an SDK patch) makes `pod install`
   # fail; retries of the same command cannot recover.
@@ -176,6 +184,7 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
     -destination "id=${IOS_UDID}" \
     -derivedDataPath "$DERIVED" \
     CODE_SIGNING_ALLOWED=NO \
+    "$ONLY_ACTIVE_ARCH_SETTING" \
     build
 fi
 
@@ -203,6 +212,22 @@ if [[ "$CELL" == "dynamic" ]]; then
     fi
   fi
   echo "Dynamic framework OK: $FW" | tee "$LOG_DIR/framework-ok.txt"
+fi
+
+# Prove the static cell built a universal binary — the whole point of the
+# coverage arch-selection dogfood. llvm-cov needs -arch for a fat Mach-O; if a
+# toolchain change ever silently reverts this to a thin build the guard would be
+# meaningless, so fail loudly.
+if [[ "$CELL" == "static" ]]; then
+  echo "==> Assert universal app binary"
+  APP_BIN="$APP_PATH/$PRODUCT_NAME"
+  ARCHS_FOUND="$(xcrun lipo -archs "$APP_BIN" 2>/dev/null | tee "$LOG_DIR/app-archs.txt" || true)"
+  echo "app binary archs: $ARCHS_FOUND"
+  if [[ "$(echo "$ARCHS_FOUND" | wc -w | tr -d ' ')" -lt 2 ]]; then
+    echo "Expected a universal (multi-arch) binary to exercise llvm-cov -arch, got: '$ARCHS_FOUND'" >&2
+    exit 1
+  fi
+  echo "Universal binary OK: $ARCHS_FOUND" | tee "$LOG_DIR/app-universal-ok.txt"
 fi
 
 METRO_PID=""
