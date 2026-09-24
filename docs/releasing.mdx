@@ -59,7 +59,22 @@ Examples: `feat: …`, `fix: …`, `docs: …`, `chore: …`. Breaking changes: 
 | Workflow | `.github/workflows/release.yml` (`workflow_dispatch` only) |
 | Analyzer | Conventional Commits via `@semantic-release/commit-analyzer` |
 | Publish | `@semantic-release/npm` + `@semantic-release/github` |
-| **Not used** | `@semantic-release/git` — dropped so releases do not need a bot push past branch protection; version tags + GitHub Releases carry the release, not in-repo `package.json` bumps |
+| Changelog | `@semantic-release/changelog` prepends generated notes to `CHANGELOG.md` |
+| Commit back | `@semantic-release/git` commits the bumped `package.json` + `CHANGELOG.md` and tags **that** commit |
+
+### Branch protection and the commit-back step
+
+`@semantic-release/git` pushes the release commit to `main`, which is branch-protected. The
+default `GITHUB_TOKEN` cannot bypass required pull requests, so the release will fail at the
+git step unless the workflow runs with a token allowed to bypass protection. Options:
+
+- Add the release bot (or a GitHub App / fine-grained PAT) to **"Allow specified actors to
+  bypass required pull requests"** on the `main` ruleset, and expose that token to the workflow.
+- The commit message carries `[skip ci]` so the pushed release commit does not re-trigger CI.
+
+Because tags now point at the release commit (not the source commit), a checkout at any `v*`
+tag has a truthful `package.json` and `CHANGELOG.md`. **Never delete a released tag** — it is
+still the source of truth for the next version calculation.
 
 Dry-run (no publish; needs network + git history):
 
