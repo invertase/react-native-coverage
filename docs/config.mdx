@@ -11,6 +11,7 @@ Key fields:
 | `app.iosBundleId` | simctl container lookup |
 | `app.iosProductName` | App binary / `.app` name |
 | `ios.frameworkNamePrefixes` | Extra llvm-cov `-object` frameworks |
+| `ios.arch` | `llvm-cov -arch` for universal binaries (empty = auto-detect; set e.g. `arm64` to force) |
 | `android.coverageRelativePath` | On-device `.ec` path under app files |
 | `android.libraryProjectMatchers` | Fallback Jacoco package substrings for assert |
 | `android.jacocoReportXml` | Default Jacoco XML path after `android report` |

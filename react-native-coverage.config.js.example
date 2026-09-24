@@ -14,6 +14,10 @@ module.exports = {
   ios: {
     // e.g. ['MyLib'] to include MyLib*.framework as llvm-cov objects
     frameworkNamePrefixes: [],
+    // llvm-cov -arch for universal (multi-arch) simulator binaries.
+    // '' = auto-detect (thin binaries need none; fat picks the host arch);
+    // set e.g. 'arm64' to force a slice.
+    arch: '',
   },
   android: {
     libraryProjectMatchers: [],

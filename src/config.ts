@@ -53,6 +53,18 @@ export type CoverageConfig = {
   ios: {
     /** Framework basename prefixes to include as llvm-cov `-object`s. */
     frameworkNamePrefixes: string[];
+    /**
+     * Architecture to select for `llvm-cov` (`export`/`show`/`report`) when the
+     * app binary is a universal (multi-arch) Mach-O — e.g. a simulator build
+     * containing both `arm64` and `x86_64` slices. `llvm-cov` cannot read
+     * coverage from a fat binary without `-arch`, which is why universal
+     * simulator builds otherwise report 0%.
+     *
+     * Empty (default) → auto: single-arch (thin) binaries need no selection;
+     * fat binaries pick the host arch when present, else the first slice.
+     * Set explicitly (e.g. `'arm64'`) to override the auto choice.
+     */
+    arch: string;
   };
   android: {
     libraryProjectMatchers: string[];
@@ -92,6 +104,7 @@ export const DEFAULT_COVERAGE_CONFIG: CoverageConfig = {
   },
   ios: {
     frameworkNamePrefixes: [],
+    arch: '',
   },
   android: {
     libraryProjectMatchers: [],

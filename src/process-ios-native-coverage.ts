@@ -15,6 +15,11 @@ export type IosExportOptions = {
   appName: string;
   output: string;
   config?: CoverageConfig;
+  /**
+   * Architecture to pass to `llvm-cov` for a universal (fat) binary. Overrides
+   * `config.ios.arch`. Empty/undefined → auto-detect (see {@link resolveLlvmArch}).
+   */
+  arch?: string;
   /** When true, delete processed `.profraw` files after a successful export. */
   deleteProfraw?: boolean;
   /**
@@ -229,6 +234,78 @@ function buildObjectArgs(coverageObjects: string[]): string[] {
   return args;
 }
 
+/** Map a Node `process.arch` value to the llvm/Mach-O arch name. */
+export function normalizeHostArch(nodeArch: string): string {
+  if (nodeArch === 'x64') {
+    return 'x86_64';
+  }
+  return nodeArch; // 'arm64' (and anything already normalized) passes through
+}
+
+/**
+ * Read the architecture slices present in a Mach-O via `lipo -archs`.
+ * Returns `[]` when the file is missing or `lipo` is unavailable (callers then
+ * fall back to the current, arch-agnostic behavior).
+ */
+export function detectBinaryArchs(binaryPath: string): string[] {
+  try {
+    const out = execFileSync('xcrun', ['lipo', '-archs', binaryPath], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return out.trim().split(/\s+/).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Decide the `-arch` value for `llvm-cov`.
+ *
+ * `llvm-cov` cannot read coverage from a universal (multi-arch) binary without
+ * `-arch`, so a simulator build carrying both `arm64` and `x86_64` slices would
+ * otherwise export 0%. Selection order:
+ *   1. explicit `configArch` (from CLI `--arch` or `config.ios.arch`),
+ *   2. thin binary (≤1 slice) → `undefined` (no `-arch`; preserves prior behavior),
+ *   3. fat binary → the host arch when present, else the first available slice.
+ */
+export function chooseLlvmArch(
+  availableArchs: string[],
+  hostArch: string = process.arch,
+  configArch?: string
+): string | undefined {
+  const explicit = configArch?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  if (availableArchs.length <= 1) {
+    return undefined;
+  }
+  const host = normalizeHostArch(hostArch);
+  if (availableArchs.includes(host)) {
+    return host;
+  }
+  return availableArchs[0];
+}
+
+/** Resolve the `-arch` value for a given app binary, honoring overrides. */
+function resolveLlvmArch(
+  appBinary: string,
+  configArch: string,
+  override?: string
+): string | undefined {
+  const explicit = (override ?? configArch)?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  return chooseLlvmArch(detectBinaryArchs(appBinary), process.arch);
+}
+
+/** `['-arch=arm64']` when an arch is selected, otherwise `[]`. */
+function buildArchArgs(arch: string | undefined): string[] {
+  return arch ? [`-arch=${arch}`] : [];
+}
+
 /**
  * Merge profraw → profdata → LCOV with path rewrite + optional presence assert.
  */
@@ -272,6 +349,11 @@ export async function exportIosLcov(
     profdataPath,
   ]);
 
+  const arch = resolveLlvmArch(ctx.appBinary, config.ios.arch, options.arch);
+  if (arch) {
+    console.log(`[rn-coverage] llvm-cov selecting -arch=${arch}`);
+  }
+
   const rawLcovPath = path.join(path.dirname(options.output), 'lcov.raw');
   try {
     const exportArgs = [
@@ -279,6 +361,7 @@ export async function exportIosLcov(
       'export',
       '-instr-profile',
       profdataPath,
+      ...buildArchArgs(arch),
       ...buildObjectArgs(ctx.coverageObjects),
       '-format=lcov',
     ];
@@ -325,6 +408,8 @@ export type IosReportOptions = {
   profdata?: string;
   outputDir?: string;
   config?: CoverageConfig;
+  /** Override `config.ios.arch` for universal binaries (see export). */
+  arch?: string;
 };
 
 /**
@@ -360,6 +445,7 @@ export function reportIosHtml(options: IosReportOptions): string {
   }
 
   fs.mkdirSync(outputDir, { recursive: true });
+  const arch = resolveLlvmArch(ctx.appBinary, config.ios.arch, options.arch);
   runOrThrow('xcrun', [
     'llvm-cov',
     'show',
@@ -367,6 +453,7 @@ export function reportIosHtml(options: IosReportOptions): string {
     `-output-dir=${outputDir}`,
     '-instr-profile',
     profdataPath,
+    ...buildArchArgs(arch),
     ...buildObjectArgs(ctx.coverageObjects),
   ]);
 
@@ -380,6 +467,8 @@ export type IosSummaryOptions = {
   appName?: string;
   profdata?: string;
   config?: CoverageConfig;
+  /** Override `config.ios.arch` for universal binaries (see export). */
+  arch?: string;
 };
 
 /**
@@ -412,11 +501,13 @@ export function summarizeIos(options: IosSummaryOptions): string {
     throw new Error(`No coverage objects found under ${ctx.productsDir}`);
   }
 
+  const arch = resolveLlvmArch(ctx.appBinary, config.ios.arch, options.arch);
   const report = runOrThrow('xcrun', [
     'llvm-cov',
     'report',
     '-instr-profile',
     profdataPath,
+    ...buildArchArgs(arch),
     ...buildObjectArgs(ctx.coverageObjects),
   ]);
 
