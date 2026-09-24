@@ -176,12 +176,18 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   retry_logged 3 "$LOG_DIR/pod-install.log" "${POD_CMD[@]}"
 
   echo "==> xcodebuild ($CELL)"
+  # Build device-agnostically. A booted simulator is only needed to install and
+  # run the app (simctl + Appium, below), never to build for the simulator SDK.
+  # Targeting a specific "id=<udid>" here intermittently fails with "Unable to
+  # find a device matching the provided destination specifier" on GitHub runners
+  # (a CoreSimulator availability race). `generic/platform=iOS Simulator` avoids
+  # the device lookup entirely — the same pattern Detox uses in RNFB's e2e.
   run_logged "$LOG_DIR/xcodebuild.log" xcodebuild \
     -workspace "$WORKSPACE" \
     -scheme "$SCHEME" \
     -configuration Debug \
     -sdk iphonesimulator \
-    -destination "id=${IOS_UDID}" \
+    -destination "generic/platform=iOS Simulator" \
     -derivedDataPath "$DERIVED" \
     CODE_SIGNING_ALLOWED=NO \
     "$ONLY_ACTIVE_ARCH_SETTING" \
@@ -333,11 +339,14 @@ WDA_PROJECT="$(
   cd "$ROOT/e2e"
   node -e "const p=require.resolve('appium-webdriveragent/package.json'); console.log(require('path').join(require('path').dirname(p), 'WebDriverAgent.xcodeproj'))"
 )"
+# Same rationale as the app build: build WDA for the generic simulator so a
+# CoreSimulator availability race can't fail the build. The prebuilt Runner.app
+# is installed onto the specific booted UDID via simctl just below.
 run_logged "$LOG_DIR/wda-xcodebuild.log" xcodebuild \
   -project "$WDA_PROJECT" \
   -scheme WebDriverAgentRunner \
   -sdk iphonesimulator \
-  -destination "id=${IOS_UDID}" \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$WDA_DERIVED" \
   CODE_SIGNING_ALLOWED=NO \
   build-for-testing
