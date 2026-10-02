@@ -1,25 +1,19 @@
 ---
-title: App developers - Expo & React Native CLI
-description: Wire native iOS and Android coverage into your dedicated test / e2e harness app. Expo first, React Native CLI covered too.
+title: App developers
+description: Install react-native-coverage in an Expo or React Native CLI test app, flush at the end of the run, and fail CI when coverage is empty.
 ---
 
-This guide is for **app developers** who want native coverage from their end-to-end tests.
-It covers Expo first (recommended) and bare React Native CLI.
-
 <Warning>
-  Install `react-native-coverage` into a **dedicated test / e2e harness app** only
-  ([Pattern C](/pattern-c)) — never your shipping product app. Autolinking scans dependencies,
-  so keep the package out of the production `package.json` entirely, not just in `devDependencies`.
+  Install `react-native-coverage` in a [dedicated test app](/coverage#dedicated-test-app) only, never the app you ship.
 </Warning>
 
-## Prerequisites
+## Before you begin
 
-- **New Architecture / TurboModule** enabled (this package is New-Arch-only).
-- A **dedicated harness app** in your repo — e.g. a `tests/` or `e2e/` workspace app.
-- An e2e runner that can drive the app on a simulator/emulator (Appium, Detox, Maestro, …) and
-  a place to call `Coverage.flush()` at teardown.
+- The [test app](/coverage#dedicated-test-app) runs React Native's New Architecture. The flusher is a TurboModule and does not run on the old bridge.
+- Your end-to-end app is that test app, such as a `tests/` or `e2e/` workspace app.
+- You have a test runner (Appium, Detox, or Maestro) that can call `Coverage.flush()` when the suite ends.
 
-## 1. Install (in the harness)
+## Install in the test app
 
 <Tabs groupId="pm">
   <TabItem label="yarn" value="yarn">
@@ -34,15 +28,16 @@ It covers Expo first (recommended) and bare React Native CLI.
   </TabItem>
 </Tabs>
 
-## 2. Configure the build
+Run the command in the test app's folder, not the repository root.
+
+## Configure the build
 
 <Tabs groupId="host">
-  <TabItem label="Expo (recommended)" value="expo">
-    Add the config plugin, then prebuild. The plugin applies the Android Gradle helpers and wires
-    the iOS Podfile helper call for you.
+  <TabItem label="Expo" value="expo">
+    Add the config plugin, then prebuild. The plugin applies the Android Gradle helpers and adds the iOS Podfile helper call.
 
     <Steps>
-      <Step title="Add the plugin to app.json / app.config.js">
+      <Step title="Add the plugin to the `app.json` or `app.config.js` file">
         ```json
         {
           "expo": {
@@ -50,7 +45,7 @@ It covers Expo first (recommended) and bare React Native CLI.
               [
                 "react-native-coverage",
                 {
-                  "libraryProjectMatchers": ["my-native-lib"],
+                  "libraryProjectMatchers": ["my-lib"],
                   "frameworkNamePrefixes": ["MyLib"],
                   "enableAndroidCoverage": true,
                   "forceDynamicFrameworks": false
@@ -61,9 +56,9 @@ It covers Expo first (recommended) and bare React Native CLI.
         }
         ```
 
-        - `libraryProjectMatchers` — Android library projects (by name substring) you want Jacoco hits from.
-        - `frameworkNamePrefixes` — iOS framework name prefixes to flush LINKEDIT for.
-        - Keep `forceDynamicFrameworks` **false** under Expo (React-Core is force-static).
+        - `libraryProjectMatchers`: Android library projects, matched by name substring, that you want JaCoCo hits from.
+        - `frameworkNamePrefixes`: iOS framework name prefixes whose `LINKEDIT` counters are flushed.
+        - `forceDynamicFrameworks`: `false` under Expo, where `React-Core` is a static library.
       </Step>
       <Step title="Prebuild">
         ```sh
@@ -72,16 +67,16 @@ It covers Expo first (recommended) and bare React Native CLI.
       </Step>
     </Steps>
 
-    Full detail: [Android integration](/integration/android) · [iOS integration](/integration/ios).
+    For more information, see [Android](/integration/android) and [iOS](/integration/ios).
   </TabItem>
 
-  <TabItem label="React Native CLI (bare)" value="cli">
-    Apply the shipped Gradle and CocoaPods helpers manually.
+  <TabItem label="React Native CLI" value="cli">
+    Apply the Gradle and CocoaPods helpers that ship with the package.
 
     <Steps>
-      <Step title="Android — root android/build.gradle">
+      <Step title="Edit the root `android/build.gradle` file">
         ```gradle
-        ext.coverageLibraryProjectMatchers = ['my-native-lib']
+        ext.coverageLibraryProjectMatchers = ['my-lib']
         def rnCoverageRoot = new File(
           ["node", "--print", "require.resolve('react-native-coverage/package.json')"]
             .execute(null, rootDir).text.trim()
@@ -89,7 +84,7 @@ It covers Expo first (recommended) and bare React Native CLI.
         apply from: new File(rnCoverageRoot, "android/rn-coverage.gradle")
         ```
       </Step>
-      <Step title="Android — app/build.gradle">
+      <Step title="Edit the `android/app/build.gradle` file">
         ```gradle
         android { buildTypes { debug { testCoverageEnabled true } } }
 
@@ -100,11 +95,11 @@ It covers Expo first (recommended) and bare React Native CLI.
         apply from: new File(rnCoverageRoot, "android/rn-coverage-jacoco.gradle")
         ```
       </Step>
-      <Step title="iOS — Podfile">
+      <Step title="Edit the `Podfile` file">
         ```ruby
         require_relative '../node_modules/react-native-coverage/cocoapods/coverage_post_install'
 
-        # After use_expo_modules! (if present):
+        # After use_expo_modules!, when present
         ReactNativeCoverage.install_installer_hooks!
 
         post_install do |installer|
@@ -123,29 +118,45 @@ It covers Expo first (recommended) and bare React Native CLI.
       </Step>
     </Steps>
 
-    Copy `react-native-coverage.config.js.example` to `react-native-coverage.config.js` if you need
-    host-specific paths (bundle id, product name, framework prefixes). See [Config](/config).
+    When the test app needs its own bundle ID, product name, or framework prefixes, copy the `react-native-coverage.config.js.example` file to the `react-native-coverage.config.js` file. For more information, see [Configuration](/reference/config).
   </TabItem>
 </Tabs>
 
-## 3. Flush at the end of your e2e run
+## Flush at the end of the test run
 
-Call the TurboModule once at suite teardown. It dumps native buffers **and** the Istanbul
-`global.__coverage__` object when your JS bundle was instrumented.
+When the suite ends, call `Coverage.flush()` one time. It writes the native counters and, when you start Metro with `RN_COVERAGE_JS=1`, the Istanbul `global.__coverage__` object.
 
 ```ts
 import Coverage from 'react-native-coverage';
 
-// e.g. in an Appium/Detox afterAll hook, triggered via a testID button or deep link
+// In an afterAll hook, reached through a testID button or a deep link
 await Coverage.flush();
 ```
 
-See [E2E timing](/integration/e2e-timing) for exactly when to flush and pull.
-
-## 4. Pull, report, and gate CI
+Your test runner decides when. The package does not ship Appium, Detox, or Maestro. When you want JavaScript coverage, set `RN_COVERAGE_JS=1` before you start Metro. The order of a run is:
 
 <Steps>
-  <Step title="Pull the device artifacts">
+  <Step title="Start Metro">
+    Start Metro for the test app.
+  </Step>
+  <Step title="Launch the app">
+    Launch the test app on the simulator or emulator.
+  </Step>
+  <Step title="Run the suite">
+    Drive the app with your test runner.
+  </Step>
+  <Step title="Flush one time">
+    When the last test has finished, call `Coverage.flush()` from the app. The files land in the app container: `files/coverage.ec` on Android, `.profraw` files in the simulator container on iOS, and `coverage-final.json` on both when JavaScript is instrumented.
+  </Step>
+  <Step title="Pull and report on the host">
+    Run the `rn-coverage` commands in the next section.
+  </Step>
+</Steps>
+
+## Pull, report, and fail CI on empty coverage
+
+<Steps>
+  <Step title="Pull the files from the device">
     ```sh
     rn-coverage android pull
     rn-coverage ios pull
@@ -153,51 +164,50 @@ See [E2E timing](/integration/e2e-timing) for exactly when to flush and pull.
   </Step>
   <Step title="Turn them into reports">
     ```sh
-    rn-coverage android report                     # Jacoco XML
-    rn-coverage ios export && rn-coverage ios report # LCOV + llvm-cov report
+    rn-coverage android report                       # JaCoCo XML
+    rn-coverage ios export && rn-coverage ios report # LCOV and the llvm-cov report
     ```
   </Step>
   <Step title="Fail the job when coverage is empty">
     ```sh
-    rn-coverage assert   # exit 2 when there are no hits — that is the point
+    rn-coverage assert
     ```
   </Step>
 </Steps>
 
-<Info>
-  `rn-coverage assert` is the package-owned replacement for one-off "did anything get covered?"
-  shell scripts. In strict mode (the CI default) an empty or missing artifact **exits 2**, so a
-  sabotaged or silently-broken pipeline fails loudly instead of shipping a false green.
-</Info>
+`rn-coverage assert` exits 0 when the configured paths have hits. It exits 2 when a report is missing or empty, so the CI job fails. Keep strict mode, the default, in CI. For more information, see [Empty or missing coverage](/troubleshooting/empty-coverage).
 
-Want JavaScript/TypeScript e2e coverage remapped to your TS sources too? See
-[JavaScript / TypeScript](/integration/js).
+For JavaScript and TypeScript coverage remapped to your TypeScript sources, add `rn-coverage js pull` and `rn-coverage js report` from [JavaScript and TypeScript](/integration/js).
 
-## Optionally upload to Codecov
+## Optional: upload to Codecov
 
-Upload each artifact with a distinct flag so iOS, Android, and JS stay separate:
+Upload each report under its own flag so iOS, Android, and JavaScript stay separate on the dashboard. For more information about how Codecov relates to this package, see [Upload to Codecov](/integration/codecov).
 
 ```sh
-# native
 codecov -f coverage/ios/lcov.info -F e2e-ios
 codecov -f coverage/android/jacocoTestReport.xml -F e2e-android
-# js
 codecov -f coverage/js/lcov.info -F e2e-js
 ```
 
 ## Next steps
 
-<CardGroup cols={2}>
-  <Card title="Android details" icon="android" href="/integration/android">
-    Gradle helpers, Emma `.ec` → Jacoco, package matchers.
+<CardGroup cols={3}>
+  <Card title="Android" icon="android" href="/integration/android">
+    Gradle helpers, the Emma `.ec` file, and JaCoCo.
   </Card>
-  <Card title="iOS details" icon="apple" href="/integration/ios">
-    Dynamic vs static frameworks, the Ruby helper, LINKEDIT flush modes.
+  <Card title="iOS" icon="apple" href="/integration/ios">
+    The CocoaPods helper, static and dynamic frameworks, and LCOV export.
   </Card>
-  <Card title="CI (Appium)" icon="gears" href="/integration/ci-appium">
-    Hard-won GitHub Actions pitfalls for simulator, WDA, and Jacoco paths.
+  <Card title="JavaScript and TypeScript" icon="js" href="/integration/js">
+    Instrument Metro and remap to TypeScript lines.
   </Card>
-  <Card title="CLI reference" icon="terminal" href="/cli">
+  <Card title="CI with Appium" icon="gears" href="/integration/ci-appium">
+    Run the job on GitHub Actions.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/reference/cli">
     Every command, flag, and exit code.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/reference/config">
+    Every key in the `react-native-coverage.config.js` file.
   </Card>
 </CardGroup>

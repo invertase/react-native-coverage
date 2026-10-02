@@ -1,10 +1,13 @@
-# iOS integration
+---
+title: iOS
+description: Apply LLVM coverage flags through the CocoaPods helper, flush from the TurboModule, and export LCOV from the iOS Simulator.
+---
 
-- New Architecture only; TurboModule autolinks via the podspec.
-- Flusher packaging (dynamic frameworks): **mode (c)** — Pod LINKEDIT for
-  configured `frameworkNamePrefixes` **and** the main executable (see spike verdict).
+The [test app](/coverage#dedicated-test-app) must run the New Architecture; the TurboModule autolinks through the `Coverage.podspec` file.
 
-## Expo (recommended)
+## Expo
+
+1. Add the config plugin. It adds the `Podfile` helper call for you:
 
 ```json
 {
@@ -22,37 +25,23 @@
 }
 ```
 
-Keep `forceDynamicFrameworks` **false** under Expo (React-Core is force-static). Set **true** only on bare RN / RNFB hosts that build React as dynamic frameworks.
-
-## CI cells (honest matrix)
-
-| Cell | App | Linkage | Gate |
-|------|-----|---------|------|
-| **iOS dynamic (primary)** | `example-dynamic/` bare RN | `use_frameworks! :linkage => :dynamic` | Non-zero fixture LCOV **and** `CoverageFixture.framework` is a dylib |
-| **iOS static** | `example/` Expo | staticlib merge into app / `.debug.dylib` | Non-zero fixture LCOV |
-| **Android** | `example/` Expo | Jacoco-instrumented libraries | Non-zero fixture package LINE hits |
-
-Appium (WebDriverIO) drives the harness; see `e2e/` and `scripts/ci/run-ios-e2e-cell.sh`.
-
-1. Sets `ios.useFrameworks=dynamic` in Podfile properties (needed for multi-image LINKEDIT on dynamic-React hosts).
-2. Requires the shipped Ruby helper and calls `apply_post_install!` once (safe split — no Podfile regex for LLVM flags).
-3. Optionally restores dynamic frameworks for `Coverage` + matched fixture pods
-   (`forceDynamicFrameworks: true`) — **only when React is also dynamic**
-   (bare RN / RNFB). Leave `false` under Expo (React-Core is force-static);
-   CocoaPods rejects dynamic Coverage* pods that transitively depend on static
-   React-Core. Under Expo, Coverage* remain static libraries merged into the app.
+2. Set up the native iOS project:
 
 ```sh
 npx expo prebuild
 cd ios && pod install
 ```
 
-## Bare React Native / manual Podfile
+Under Expo, keep `forceDynamicFrameworks` `false`. For more information, see [Static and dynamic frameworks](/integration/ios#static-and-dynamic-frameworks).
+
+## React Native CLI
+
+Call the helper from the `Podfile`:
 
 ```ruby
 require_relative '../node_modules/react-native-coverage/cocoapods/coverage_post_install'
 
-# After `use_expo_modules!` (wraps Installer so restore runs after Expo's staticlib downgrade):
+# After use_expo_modules!, when present, so the restore runs after Expo's static downgrade
 ReactNativeCoverage.install_installer_hooks!
 
 post_install do |installer|
@@ -64,14 +53,33 @@ post_install do |installer|
 end
 ```
 
-The helper:
+The helper does the following:
 
-- Applies LLVM `-fprofile-instr-generate` / `-fcoverage-mapping` (+ link flags) to the app target and matching pods.
-- Regenerates `ios/CoverageConfig.h` from `framework_name_prefixes`.
-- Restores `Pod::BuildType.dynamic_framework` for Coverage / fixture pods when Expo forced `static_library`.
+- Applies `-fprofile-instr-generate` and `-fcoverage-mapping`, with the matching link flags, to the app target and to the pods that match `framework_name_prefixes`.
+- Regenerates the `ios/CoverageConfig.h` file from `framework_name_prefixes`, so the flusher can read the matching images.
+- Restores `Pod::BuildType.dynamic_framework` for the Coverage pods and matched pods when Expo forced `static_library` and `force_dynamic_frameworks` is `true`.
 
-## Runtime + CLI
+Do not add the LLVM flags by editing the `Podfile` with a regular expression. The helper is the supported path, and the Expo plugin calls the same helper.
 
-Call `flush()` before `rn-coverage ios pull`, then `rn-coverage ios export` for LCOV.
+## Static and dynamic frameworks
 
-The Expo config plugin wires the Podfile helper call; it does **not** replace the Ruby helper for Pod LLVM flags (safe split).
+The flusher reads LLVM counters from the `LINKEDIT` section of each loaded image: the main executable, and every framework whose name starts with one of `frameworkNamePrefixes`.
+
+- With static libraries, which is Expo's default, your pods are merged into the app binary. The main executable carries the counters, and one LCOV covers everything.
+- With dynamic frameworks, each framework is its own image with its own counters. `frameworkNamePrefixes` selects which images the flusher reads.
+
+Only when React itself builds as dynamic frameworks, as in this repository's `example-dynamic/` app, set `forceDynamicFrameworks` to `true`. Under Expo, `React-Core` is a static library, and CocoaPods rejects a dynamic Coverage pod that depends on a static `React-Core`. Leave the value `false` there and the Coverage pods stay static libraries merged into the app.
+
+## Pull and export
+
+When the suite ends, `Coverage.flush()` writes the `.profraw` files into the simulator container. On the host, pull the profiles, export LCOV, and assert coverage:
+
+```sh
+rn-coverage ios pull --device UDID                   # copies the .profraw files out of the container
+rn-coverage ios export --derived-data DERIVED_DATA_PATH  # merges them and writes LCOV
+rn-coverage ios report --derived-data DERIVED_DATA_PATH  # llvm-cov report, optional
+rn-coverage ios summary --derived-data DERIVED_DATA_PATH # llvm-cov summary, optional
+rn-coverage assert                                   # exits 2 when the LCOV has no matched hits
+```
+
+Build the test app with `-derivedDataPath` so `--derived-data` points at a folder you control. The CLI handles universal (multi-arch) simulator binaries for you; `--arch` overrides the selection. For more information, see [CLI](/reference/cli).

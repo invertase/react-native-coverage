@@ -1,0 +1,97 @@
+---
+title: Coverage
+description: What react-native-coverage measures, the dedicated test app it runs in, and how flush, pull, report, and assert fit together.
+---
+
+## What it measures
+
+`react-native-coverage` measures whether your Objective-C++, Swift, Kotlin, and instrumented TypeScript ran during an end-to-end test on a simulator or emulator.
+
+| Layer | What it covers |
+|-------|----------------|
+| **iOS native** | LLVM counters in the app and frameworks, flushed in-process, exported to LCOV |
+| **Android native** | Emma `.ec` from the process, reported as JaCoCo XML |
+| **JS / TypeScript (optional)** | Istanbul `global.__coverage__` when Metro runs with `RN_COVERAGE_JS=1`, remapped to TypeScript LCOV |
+| **Unit (separate)** | Jest in Node still covers JS/TS you exercise without a device |
+
+Jest and Istanbul in Node do not see native TurboModule code on a device. This package fills that gap. You run it from a [dedicated test app](/coverage#dedicated-test-app).
+
+iOS needs an in-process flush: counters live in the running app, `.profraw` files sit in the simulator container, and each dynamic framework keeps its own `LINKEDIT` section. Android dumps Emma coverage from the process. When Metro is instrumented, the same flush can also write Istanbul JSON.
+
+That native surface shows up as real source files with line hits, not a mock:
+
+<Image
+  src="https://raw.githubusercontent.com/invertase/react-native-coverage/main/docs/assets/codecov/ios-tree.png"
+  alt="File explorer showing the ios/ native directory with line coverage for Coverage.mm, CoverageProfile.mm, and CoverageConfig.h"
+  caption="Native iOS files with line coverage from this package's harness."
+/>
+
+## How the pipeline works
+
+1. A [dedicated test app](/coverage#dedicated-test-app) runs the end-to-end suite under Appium, Detox, or Maestro.
+2. `Coverage.flush()` writes the native counters and, when present, the Istanbul JSON.
+3. `rn-coverage` pulls those files and writes LCOV for iOS and TypeScript, and JaCoCo XML for Android.
+4. `rn-coverage assert` exits `2` when a report is missing or empty, so CI cannot pass on nothing.
+5. Upload each report to a coverage host under its own flag when you want a dashboard. For Codecov, see [Upload to Codecov](/integration/codecov).
+
+The package ships the TurboModule, the CLI, the Expo config plugin, the CocoaPods helper, the Gradle JaCoCo helpers, and the Babel and NYC setup. There is no regex edit of the `Podfile`, no hand recovery of `.profraw` files, and no hand-written Gradle coverage wiring.
+
+After upload, a dashboard for this harness looks like this (illustration only):
+
+<Image
+  src="https://raw.githubusercontent.com/invertase/react-native-coverage/main/docs/assets/codecov/dashboard.png"
+  alt="Coverage dashboard showing overall coverage, trend, sunburst graph, and the native code tree"
+  caption="Example dashboard for this package's harness reports."
+/>
+
+## Dedicated test app
+
+Install `react-native-coverage` only in a **dedicated test app** (a harness such as `tests/`, `e2e/`, or `example/`), never in the app you ship.
+
+The flusher is a TurboModule. It reads compiler counters from the running process and writes coverage files into that app's container. React Native autolinking scans every dependency of the app it builds, including `devDependencies`. If this package is in the shipping app's `package.json` under either key, the TurboModule lands in the product binary.
+
+The test app must:
+
+- Have its own `package.json` and its own native projects after `prebuild` or `pod install`
+- Run React Native's **New Architecture** (required for the TurboModule)
+- Drive end-to-end runs (Appium, Detox, Maestro, or similar) that exercise the native surface you care about, then call `Coverage.flush()`
+
+```json
+{
+  "name": "my-app-monorepo",
+  "private": true,
+  "workspaces": ["app", "tests"]
+}
+```
+
+```json
+{
+  "name": "tests",
+  "private": true,
+  "dependencies": {
+    "react-native": "0.86.3",
+    "react-native-coverage": "^0.2.2"
+  }
+}
+```
+
+This repository uses that shape: library at the root, `example/` (Expo, static libraries) and `example-dynamic/` (React Native CLI, dynamic frameworks) beside it.
+
+## Example from this package
+
+Invertase CI runs this package's harness apps and uploads the reports. The numbers below are that harness, not a product app.
+
+| Flag | What ran | Coverage |
+|------|----------|---------:|
+| [`e2e-ios-dynamic`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-dynamic) | iOS native, dynamic frameworks | 90.6% |
+| [`e2e-android`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-android) | Android native (Emma to JaCoCo) | 81.7% |
+| [`e2e-ios-static`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-static) | iOS native, static libraries | 63.1% |
+| [`unit-js`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/unit-js) | Jest unit (JavaScript and TypeScript) | 52.6% |
+
+Those numbers come from an iOS Simulator and Android emulator running the harness under Appium. Line-level view of the TurboModule (`ios/Coverage.mm` at 71.88%):
+
+<Image
+  src="https://raw.githubusercontent.com/invertase/react-native-coverage/main/docs/assets/codecov/ios-coverage-mm.png"
+  alt="Line-by-line view of ios/Coverage.mm at 71.88 percent, with Objective-C++ TurboModule code covered and partially covered"
+  caption="Line hits in `ios/Coverage.mm` from the harness."
+/>

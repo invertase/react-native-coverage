@@ -1,0 +1,90 @@
+---
+title: Configuration
+description: Every key in react-native-coverage.config.js for the app, iOS, Android, JavaScript, and assert, with defaults.
+---
+
+`rn-coverage` reads the `react-native-coverage.config.js` file from the folder it runs in, or from `-c <path>`. A missing file means every default in the following tables. No default names a product; set the `app` keys for your [test app](/coverage#dedicated-test-app).
+
+## Create the config file
+
+Copy the [`react-native-coverage.config.js.example`](https://github.com/invertase/react-native-coverage/blob/main/react-native-coverage.config.js.example) file to the `react-native-coverage.config.js` file in your [dedicated test app](/coverage#dedicated-test-app):
+
+```js
+// react-native-coverage.config.js
+module.exports = {
+  app: {
+    androidApplicationId: 'com.example.tests',
+    iosBundleId: 'com.example.tests',
+    iosProductName: 'Tests',
+  },
+  ios: { frameworkNamePrefixes: ['MyLib'] },
+  android: { libraryProjectMatchers: ['my-lib'] },
+  assert: {
+    lcovPathIncludes: ['packages/my-lib'],
+    jacocoPackageIncludes: ['com.my.lib'],
+  },
+};
+```
+
+## Top level
+
+These keys sit at the root of the file.
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `nativeModuleName` | `'Coverage'` | TurboModule name |
+| `strict` | `true` | Exit 2 when a report is missing or has no hits. `--strict` and `--no-strict` override it for one process. |
+| `sourcePathRewrite` | `[]` | Rules that rewrite LCOV `SF:` paths. Each rule is `{ kind: 'after-marker', marker }` or `{ kind: 'regex', pattern, replacement }`. |
+
+## App
+
+These keys name the [dedicated test app](/coverage#dedicated-test-app).
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `app.androidApplicationId` | `'com.example.coverage'` | Package used with `run-as` for `adb` pulls |
+| `app.iosBundleId` | `'com.example.coverage'` | Bundle ID used to find the simulator app container |
+| `app.iosProductName` | `'CoverageExample'` | App binary and `.app` name under derived data |
+
+## iOS
+
+These keys configure iOS coverage.
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `ios.frameworkNamePrefixes` | `[]` | Framework name prefixes whose `LINKEDIT` counters are flushed and passed to `llvm-cov` as `-object` |
+| `ios.arch` | `''` | `llvm-cov -arch` for a universal binary. Empty means auto: a thin binary needs none, and a universal binary uses the host architecture. An `'arm64'` value forces the architecture. |
+
+## Android
+
+These keys sit under `android` in the config file.
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `libraryProjectMatchers` | `[]` | Gradle library project name substrings to instrument, and the fallback JaCoCo package matchers for `assert` |
+| `coverageRelativePath` | `'files/coverage.ec'` | `.ec` path under the app's files folder on the device |
+| `detoxStagingPath` | `'/data/local/tmp/coverage/coverage.ec'` | Staging path on the device that `run-as … cat` writes to before `adb pull`. `android pull` creates the parent folder. |
+| `jacocoReportXml` | `'…/jacocoTestReport.xml'` | JaCoCo XML written by `android report`. Full default: `android/app/build/reports/jacoco/` `jacocoTestReport/jacocoTestReport.xml`. |
+
+## JavaScript
+
+These keys sit under `js` in the config file.
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `androidRelativePath` | `'files/coverage-final.json'` | Istanbul JSON path under `run-as` on Android |
+| `androidStagingPath` | `'/data/local/tmp/coverage/coverage-final.json'` | Staging path on the device for the `adb` pull |
+| `iosRelativePath` | `'Documents/coverage-final.json'` | Istanbul JSON path under the simulator app data container |
+
+## Assert
+
+These keys sit under `assert` in the config file.
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `lcovPathIncludes` | `['packages/']` | Substrings that at least one LCOV `SF:` path with hits must contain |
+| `jacocoPackageIncludes` | `[]` | JaCoCo package name substrings that must have `LINE` hits. Dots or slashes both match. |
+| `defaultLcovPath` | `'coverage/ios/lcov.info'` | LCOV file `rn-coverage assert` reads when `--lcov` is not passed |
+| `defaultJacocoXmlPath` | `'…/jacocoTestReport.xml'` | JaCoCo XML `rn-coverage assert` reads when `--jacoco-xml` is not passed. Full default: `android/app/build/reports/jacoco/` `jacocoTestReport/jacocoTestReport.xml`. |
+
+For more information about the commands that read these keys, see [CLI](/reference/cli).
