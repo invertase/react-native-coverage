@@ -1,0 +1,19 @@
+---
+title: Upload to Codecov
+description: Codecov displays the LCOV and JaCoCo files react-native-coverage already produced. What to upload, and how flags keep platforms separate.
+---
+
+Codecov does not collect native coverage from your simulator. `react-native-coverage` writes the report files; Codecov stores and displays whatever you upload. Flush, pull, report, and assert still live in this package. For how that pipeline fits together, see [Coverage](/coverage).
+
+## What to upload
+
+After pull and report, upload each file under its own Codecov flag so platforms stay separate:
+
+| Report | Producer |
+|--------|----------|
+| iOS LCOV | `rn-coverage ios export` / `ios report` |
+| Android JaCoCo XML | `rn-coverage android report` |
+| TypeScript LCOV | `rn-coverage js report` (when `RN_COVERAGE_JS=1`) |
+| Unit LCOV | Jest `--coverage` (library maintainers) |
+
+Paths depend on your config and CI layout. Command examples are on [App developers](/app-developers). For a live harness upload from this package (not your product app), see [Coverage](/coverage).

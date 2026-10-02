@@ -1,76 +1,58 @@
 ---
-title: Code coverage for React Native - Typescript, iOS, and Android - without touching the native stuff.
-description: Flush real device coverage from a TurboModule, merge it into LCOV / Jacoco, remap TypeScript line-for-line, and gate your dev loop or CI.
+title: Native code coverage for React Native
+description: iOS, Android, and TypeScript code coverage from end-to-end tests in a dedicated React Native test app, with a CI gate for empty coverage.
 ---
 
-Install it into a dedicated test / e2e harness app ([Pattern C](/pattern-c)) — never your shipping app.
+<Warning>
+  Install it in a [dedicated test app](/coverage#dedicated-test-app), never the app you ship. The flusher is a TurboModule, so the test app must run React Native's New Architecture.
+</Warning>
 
-A TurboModule flushes real device coverage; the CLI pulls it, **merges** every framework's `.profraw` and the
-app binary into clean LCOV / Jacoco, and remaps your instrumented JS line-for-line back to TypeScript — smoothing
-the rough edges of modern TypeScript development by handling the line-accurate source mapping for you. Use that as
-a signal in your development loop or CI to gate development iterations or CI pass/fail.
+## Install
 
-[![Codecov dashboard for react-native-coverage — overall coverage, 3-month trend, sunburst graph, and the native code tree](/assets/codecov/dashboard.png)](https://app.codecov.io/gh/invertase/react-native-coverage)
+Give your coding agent this prompt:
 
-## Start here
+```txt
+Read https://docs.page/invertase/react-native-coverage/app-developers.md, and set up react-native-coverage in this project.
+```
+
+Or pick a relevant install guide:
 
 <CardGroup cols={3}>
   <Card title="App developers" icon="mobile-screen" href="/app-developers">
-    Add native coverage to your Expo or React Native CLI test app.
+    From install through `rn-coverage assert` exiting `0` on iOS and Android.
   </Card>
   <Card title="Library maintainers" icon="cubes" href="/library-maintainers">
-    Prove your library's native code ran — in unit tests and a test app.
+    Keep unit tests, add the test-app layer, and require hits in your own package.
   </Card>
-  <Card title="Agents" icon="robot" href="/agents">
-    A paste-ready prompt and the CI contract your agent must satisfy.
+  <Card title="Coding agents" icon="robot" href="/agents">
+    Prompt, hard rules, and the assert exit-code contract.
   </Card>
 </CardGroup>
 
-## Why it matters
+## Explore
 
-React Native is cross-platform, but coverage tooling usually stops at the JavaScript bundle.
-The Objective-C++, Swift, and Kotlin behind your TurboModules run on a device and then vanish —
-**iOS native coverage especially is a black box.** This package makes that evidence a one-liner,
-so you (or your agent) can prove the native path executed, not just the mock.
+<CardGroup cols={2}>
+  <Card title="Coverage" icon="lightbulb" href="/coverage">
+    What this package measures, how the pipeline works, and what you need to run it.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integration/android">
+    Android, [iOS](/integration/ios), [JavaScript and TypeScript](/integration/js), [CI with Appium](/integration/ci-appium), and [Codecov](/integration/codecov).
+  </Card>
+  <Card title="Reference" icon="book" href="/reference">
+    Every `rn-coverage` command, flag, and exit code, and every key in the `react-native-coverage.config.js` file.
+  </Card>
+  <Card title="Troubleshooting" icon="triangle-exclamation" href="/troubleshooting/empty-coverage">
+    Resolve empty reports and `rn-coverage assert` failures.
+  </Card>
+</CardGroup>
 
-[Read the full rationale →](/why)
+## Help
 
-## Proof, live on `main`
-
-This repository proves its own thesis on Codecov — including the hard part, iOS:
-
-| Flag | What ran | Coverage |
-|------|----------|---------:|
-| `e2e-ios-dynamic` | iOS native, dynamic frameworks | **90.6%** |
-| `e2e-android` | Android native (Emma → Jacoco) | **81.7%** |
-| `e2e-ios-static` | iOS native, static libraries | **63.1%** |
-| `unit-js` | Jest unit (JS/TS) | **52.6%** |
-
-[Browse it on Codecov →](https://app.codecov.io/gh/invertase/react-native-coverage)
-
-## Used in production by
-
-Both [**React Native Firebase**](https://github.com/invertase/react-native-firebase) and
-[**React Native Google Mobile Ads**](https://github.com/invertase/react-native-google-mobile-ads)
-depend on `react-native-coverage` in their [Pattern C](/pattern-c) test apps.
-
-<p>
-  <a href="https://github.com/invertase/react-native-firebase">
-    <img src="/assets/consumers/react-native-firebase.png" alt="React Native Firebase" height="56" />
-  </a>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/invertase/react-native-google-mobile-ads">
-    <img src="/assets/consumers/react-native-google-mobile-ads.svg" alt="React Native Google Mobile Ads" height="56" />
-  </a>
-</p>
-
-## What you get
-
-| Piece | Role |
-|-------|------|
-| **TurboModule** | `flush()` — iOS LINKEDIT LLVM flush + Android Emma dump (also dumps Istanbul `global.__coverage__` when present) |
-| **CLI (`rn-coverage`)** | `android pull\|report`, `ios pull\|export\|report\|summary`, `js pull\|report`, `assert` |
-| **Expo config plugin** | Wires the Gradle helpers + the Podfile helper call |
-| **CocoaPods Ruby helper** | Pod LLVM flags + optional dynamic-framework restore |
-| **Gradle Jacoco helpers** | `android/rn-coverage.gradle` + `android/rn-coverage-jacoco.gradle` |
-| **JS/TS coverage** | `babel-plugin-istanbul` + NYC source-map remap → TypeScript-accurate LCOV |
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://invertase.link/discord">
+    Ask about setup or unclear docs.
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/invertase/react-native-coverage/issues/new/choose">
+    Report a bug or empty report that looks wrong.
+  </Card>
+</CardGroup>

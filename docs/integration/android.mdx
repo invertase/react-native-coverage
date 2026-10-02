@@ -1,10 +1,13 @@
-# Android integration
+---
+title: Android
+description: Enable Emma instrumentation in an Expo or React Native CLI test app, pull the `.ec` file, and turn it into a JaCoCo XML report with rn-coverage.
+---
 
-Enable Android test coverage in your dedicated test app (Pattern C) and wire Jacoco reporting.
+Pull the Emma `.ec` file from your [dedicated test app](/coverage#dedicated-test-app) and turn it into a JaCoCo XML report. Expo needs fewer steps.
 
-## Expo (recommended)
+## Expo
 
-Add the config plugin — it applies both Gradle helpers and enables debug `testCoverageEnabled`:
+Add the config plugin. It applies both Gradle helpers and turns on `testCoverageEnabled` for the `debug` build type:
 
 ```json
 {
@@ -13,7 +16,7 @@ Add the config plugin — it applies both Gradle helpers and enables debug `test
       [
         "react-native-coverage",
         {
-          "libraryProjectMatchers": ["coverage-fixture", "my-native-lib"],
+          "libraryProjectMatchers": ["my-lib"],
           "enableAndroidCoverage": true
         }
       ]
@@ -22,20 +25,20 @@ Add the config plugin — it applies both Gradle helpers and enables debug `test
 }
 ```
 
-Then:
+Then generate the native Android project:
 
 ```sh
 npx expo prebuild
 ```
 
-Inspect `android/build.gradle` (root instrumentation) and `android/app/build.gradle` (Jacoco report + `testCoverageEnabled`).
+After prebuild, the `android/build.gradle` file applies the root helper and the `android/app/build.gradle` file applies the JaCoCo report helper and sets `testCoverageEnabled`.
 
-## Bare React Native / manual Gradle
+## React Native CLI
 
-In the **root** `android/build.gradle`:
+In the root `android/build.gradle` file, add this block:
 
 ```gradle
-ext.coverageLibraryProjectMatchers = ['my-native-lib']
+ext.coverageLibraryProjectMatchers = ['my-lib']
 def rnCoverageRoot = new File(
   ["node", "--print", "require.resolve('react-native-coverage/package.json')"]
     .execute(null, rootDir).text.trim()
@@ -43,7 +46,7 @@ def rnCoverageRoot = new File(
 apply from: new File(rnCoverageRoot, "android/rn-coverage.gradle")
 ```
 
-In **app** `android/app/build.gradle`:
+In the `android/app/build.gradle` file, add this block:
 
 ```gradle
 android {
@@ -61,23 +64,25 @@ def rnCoverageRoot = new File(
 apply from: new File(rnCoverageRoot, "android/rn-coverage-jacoco.gradle")
 ```
 
-## Runtime + CLI
-
-1. Call `flush()` from the TurboModule at the end of an e2e run (Emma `RT.dumpCoverageData` → `filesDir/coverage.ec`; also dumps Istanbul JSON when Metro is instrumented).
-2. `rn-coverage android pull` — output under **`android/app/build/…`** so Jacoco sees the `.ec` (not only `artifacts/`). Staging parent dirs are created for you.
-3. `rn-coverage android report` (`jacocoTestReport`).
-4. `rn-coverage assert` (strict empty → exit 2).
-5. Optional JS: `rn-coverage js pull` / `js report` — see [JS / TypeScript](js.md).
-
-Jacoco package names in XML use slashes (`com/foo`); assert matchers may use dots (`com.foo`) — both work.
-
-CI pitfalls (emulator Metro, `byTestId`, etc.): [CI Appium notes](ci-appium.md).
-
-Shipped helpers:
+These two helpers wire JaCoCo into the library and app projects.
 
 | File | Role |
 |------|------|
-| `android/rn-coverage.gradle` | Enable Jacoco + `enableAndroidTestCoverage` on matched library projects |
-| `android/rn-coverage-jacoco.gradle` | `jacocoTestReport` / unit / e2e-only report tasks |
+| `android/rn-coverage.gradle` | Enables JaCoCo and `enableAndroidTestCoverage` on every library project that matches `coverageLibraryProjectMatchers` |
+| `android/rn-coverage-jacoco.gradle` | Adds the `jacocoTestReport` task and the unit and end-to-end report variants |
 
-Pod LLVM flags are **not** applied by regex-editing the Podfile; use the Ruby helper on iOS (see [iOS integration](ios.md)).
+## Pull and report
+
+When the suite ends, `Coverage.flush()` calls Emma's `RT.dumpCoverageData` and writes `filesDir/coverage.ec`. On the host, stage the `.ec` file, write the JaCoCo XML, and assert matched hits:
+
+```sh
+rn-coverage android pull     # stages the .ec under android/app/build/ so JaCoCo's fileTree includes it
+rn-coverage android report   # runs jacocoTestReport and writes the XML
+rn-coverage assert           # exits 2 when the XML has no matched LINE hits
+```
+
+`rn-coverage android pull` creates the staging directories and lands `emulator_coverage.ec` under the app `buildDir`. JaCoCo's `executionData` is a `fileTree` over `project.buildDir` plus the matched libraries, so a file pulled only into `artifacts/` leaves `:app:jacocoTestReport` skipped with empty data.
+
+JaCoCo XML package names use slashes, `com/foo`. The `assert` matchers accept dots, `com.foo`, or slashes.
+
+For JavaScript coverage from the same run, add `rn-coverage js pull` and `rn-coverage js report` from [JavaScript and TypeScript](/integration/js). For more information about emulator and Metro failures in CI, see [CI with Appium](/integration/ci-appium).

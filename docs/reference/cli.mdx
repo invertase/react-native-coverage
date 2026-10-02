@@ -1,0 +1,163 @@
+---
+title: CLI
+description: Commands, flags, and exit codes for rn-coverage, including exit code 2 when coverage is empty.
+---
+
+The binary is `rn-coverage`. Run it from the [test app](/coverage#dedicated-test-app)'s folder, where the `react-native-coverage.config.js` file lives, or pass `-c`.
+
+## Commands
+
+The CLI supports these commands.
+
+```sh
+rn-coverage --help
+rn-coverage [--strict|--no-strict] [-c <config>] <command>
+
+rn-coverage android pull [--device <serial>] [--output <dir>] [--retries <n>]
+rn-coverage android report [--android-dir <path>] [--jacoco-xml <path>]
+
+rn-coverage ios pull --device <udid> [--output <dir>]
+rn-coverage ios export --derived-data <path> [--configuration <name>] [--app-name <name>] [--output <path>] [--arch <arch>]
+rn-coverage ios report --derived-data <path> [--configuration <name>] [--app-name <name>] [--profdata <path>] [--output-dir <path>] [--arch <arch>]
+rn-coverage ios summary --derived-data <path> [--configuration <name>] [--app-name <name>] [--profdata <path>] [--arch <arch>]
+
+rn-coverage js pull [--platform android|ios] [--device <id>] [--output <dir>]
+rn-coverage js report --input <path> [--output <dir>] [--cwd <path>] [--nyc-config <path>]
+
+rn-coverage assert [--platform ios|android|all] [--lcov <path>] [--jacoco-xml <path>]
+```
+
+### Global flags
+
+These flags apply to every command.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `-c, --config <path>` | `react-native-coverage.config.js` in the current folder | Path to the config file |
+| `--strict` | from config, `true` | Exits with 2 when a report is missing or has no hits |
+| `--no-strict` | | Warns and exits with 0 on the same conditions. Not for CI. |
+
+### android pull
+
+Copies the Emma `.ec` file out of the app with `run-as`, and stages it under the `android/app/build/` directory so the JaCoCo `fileTree` includes it.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--device <serial>` | the only connected device | `adb` device serial |
+| `--output <dir>` | | Extra local copy of the `.ec` file |
+| `--retries <n>` | `15` | Attempts as the command waits for the `.ec` file to appear |
+
+### android report
+
+Runs the `jacocoTestReport` Gradle task and checks the XML it writes.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--android-dir <path>` | `android` | Android project folder |
+| `--jacoco-xml <path>` | `android.jacocoReportXml` from config | JaCoCo XML to check after the report |
+
+### ios pull
+
+Copies the `.profraw` files out of the simulator app container.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--device <udid>` | required | Simulator UDID |
+| `--output <dir>` | | Local output folder |
+
+### ios export
+
+Merges the `.profraw` files into a `profdata` file, runs `llvm-cov export`, and writes LCOV.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--derived-data <path>` | required | Xcode derived data folder of the test app build |
+| `--configuration <name>` | `Debug` | Xcode configuration |
+| `--app-name <name>` | `app.iosProductName` from config | App product name |
+| `--output <path>` | `coverage/ios/lcov.info` | LCOV output path |
+| `--arch <arch>` | auto | `llvm-cov -arch` for a universal binary |
+
+`llvm-cov` cannot read a universal (multi-arch) Mach-O without `-arch`, so a simulator build with both `arm64` and `x86_64` slices exports 0%. A thin binary gets no `-arch`. A universal binary gets the host architecture when present, otherwise the first slice. An `--arch` flag or `ios.arch` config value overrides auto selection.
+
+### ios report
+
+Writes an HTML report with `llvm-cov show -format=html`. Requires a prior `ios export` run.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--derived-data <path>` | required | Xcode derived data folder |
+| `--configuration <name>` | `Debug` | Xcode configuration |
+| `--app-name <name>` | `app.iosProductName` from config | App product name |
+| `--profdata <path>` | `coverage/ios/profdata` | Merged profdata file from `ios export` |
+| `--output-dir <path>` | `coverage/ios/html` | HTML output folder |
+| `--arch <arch>` | auto | `llvm-cov -arch` for a universal binary |
+
+### ios summary
+
+Prints a terminal summary with `llvm-cov report`. Requires a prior `ios export` run.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--derived-data <path>` | required | Xcode derived data folder |
+| `--configuration <name>` | `Debug` | Xcode configuration |
+| `--app-name <name>` | `app.iosProductName` from config | App product name |
+| `--profdata <path>` | `coverage/ios/profdata` | Merged profdata file from `ios export` |
+| `--arch <arch>` | auto | `llvm-cov -arch` for a universal binary |
+
+### js pull
+
+Copies the Istanbul `coverage-final.json` file out of the app container.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--platform <name>` | `android` | `android` or `ios` |
+| `--device <id>` | | `adb` serial or simulator UDID |
+| `--output <dir>` | `coverage/js` | Local output folder |
+
+### js report
+
+Runs NYC over the Istanbul JSON and remaps the hits to TypeScript sources.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--input <path>` | required | The `coverage-final.json` file, or a folder of Istanbul JSON files |
+| `--output <dir>` | `coverage/js` | Report folder |
+| `--cwd <path>` | current folder | NYC `cwd` for the include globs |
+| `--nyc-config <path>` | | Path to `nyc.config.js` |
+
+### assert
+
+Checks the LCOV and JaCoCo XML after the pipeline and exits 2 when either has no matched hits.
+
+| Flag | Default | What it does |
+|------|---------|--------------|
+| `--platform <name>` | `all` | `ios`, `android`, or `all` |
+| `--lcov <path>` | `assert.defaultLcovPath` from config | LCOV file that must have hits in `assert.lcovPathIncludes` |
+| `--jacoco-xml <path>` | `assert.defaultJacocoXmlPath` from config | JaCoCo XML that must have `LINE` hits in `assert.jacocoPackageIncludes` |
+
+## Exit codes
+
+The CLI uses these exit codes.
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success. With `--no-strict`, an empty report also exits 0 with a warning. |
+| 1 | Error: bad invocation or a tool failure. |
+| 2 | No hits, or a report file is missing, in strict mode. |
+
+### Strict mode and assert
+
+Strict mode is the config default, `strict: true`, and the right setting for CI. `--strict` and `--no-strict` override the config for one process. With `--no-strict` or `strict: false`, a missing or empty report warns and exits 0, which is useful for local runs only.
+
+Each command exits with 2 in these cases.
+
+| Command | Exits 2 when |
+|---------|--------------|
+| `android pull` | No `.ec` file after the retries |
+| `android report` | Gradle succeeded but the JaCoCo XML is missing, empty, or has no matched `LINE` hits |
+| `ios pull` | No `.profraw` in the simulator container |
+| `ios export` | No `.profraw`, or the LCOV has no path matching `assert.lcovPathIncludes` with `LH` above 0 |
+| `ios report`, `ios summary` | No `profdata` file; requires a prior `ios export` run |
+| `assert` | The LCOV or the JaCoCo XML has no matched hits |
+
+The matchers and default report paths are the `assert.*` keys on [Configuration](/reference/config). For more information about exit code 2, see [Empty or missing coverage](/troubleshooting/empty-coverage).

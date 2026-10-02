@@ -2,7 +2,7 @@
 
 Contributions are always welcome, no matter how large or small!
 
-This package targets **dedicated test apps only** (Pattern C). See `docs/pattern-c.md` and `AGENTS.md`.
+This package targets **dedicated test apps only** (Pattern C). See `docs/coverage.mdx` and `AGENTS.md`.
 
 License: Apache-2.0. Please follow the [code of conduct](./CODE_OF_CONDUCT.md).
 
@@ -125,4 +125,4 @@ Local check: `echo "feat: your subject" | yarn commitlint`
 
 ### Releasing
 
-Maintainers: see [docs/releasing.md](./docs/releasing.md). Releases are **manual** (`workflow_dispatch` + semantic-release). Do not publish from a laptop unless performing the one-time human bootstrap (separate from day-to-day CI releases).
+Maintainers: see [docs/releasing.mdx](./docs/releasing.mdx). Releases are **manual** (`workflow_dispatch` + semantic-release). Do not publish from a laptop unless performing the one-time human bootstrap (separate from day-to-day CI releases).

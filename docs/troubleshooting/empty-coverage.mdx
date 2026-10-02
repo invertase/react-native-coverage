@@ -1,0 +1,42 @@
+---
+title: Empty or missing coverage
+description: How to resolve empty reports and rn-coverage assert failures when coverage is missing or a library has no hits.
+---
+
+When a report is empty or `assert` fails, match the failure to a heading below. Each section covers a common cause and how to resolve it.
+
+## rn-coverage assert exits 2
+
+In strict mode, the default, `assert` exits `2` when a report file is missing or when no path in it has hits. That exit code means the report is missing or empty.
+
+Resolve the underlying coverage gap first (use the headings below), then run `assert` again. Do not switch CI to `--no-strict`; that turns the same conditions into a warning and an exit `0`, which hides the problem. For exit codes, see [the CLI reference](/reference/cli).
+
+## The JaCoCo report is empty
+
+The `.ec` file was pulled to a folder outside the app `buildDir`. JaCoCo's `executionData` is a `fileTree` over `project.buildDir` plus the matched libraries, so `:app:jacocoTestReport` runs with no data and Gradle skips it.
+
+To resolve it, use `rn-coverage android pull`, which stages the `emulator_coverage.ec` file under the `android/app/build/` directory. If you pull by hand, put the file under the app `buildDir`, for example the `android/app/build/outputs/code_coverage/` directory. For pull and report, see [Android](/integration/android).
+
+## JavaScript report is missing a workspace library
+
+`babel-plugin-istanbul` roots `test-exclude` at the Babel working directory and skips every file outside it. A yarn workspace library is a symlink, so Metro hands Babel the real path, outside the [test app](/coverage#dedicated-test-app).
+
+To resolve it, pass `cwd` and `include` to the Babel plugin and to the `nyc.config.js` file, both rooted at the monorepo, and list the library's sources in `include`. For the snippets, see [JavaScript and TypeScript](/integration/js).
+
+## CocoaPods rejects the Coverage pods under Expo
+
+`forceDynamicFrameworks` is `true` in an Expo app. `React-Core` is a static library under Expo, and CocoaPods refuses a dynamic Coverage pod that depends on a static `React-Core`.
+
+To resolve it, set `forceDynamicFrameworks` to `false`. When React itself builds as dynamic frameworks, use `true`. For static and dynamic frameworks, see [iOS](/integration/ios).
+
+## Your iOS framework or Android library has no hits
+
+The flusher and the Gradle helper only touch the images and projects you name. `frameworkNamePrefixes` does not match your iOS framework, or `libraryProjectMatchers` does not match your Android library project, so the flusher instruments neither.
+
+To resolve it, add the framework name prefix to `frameworkNamePrefixes` and the Gradle project name substring to `libraryProjectMatchers`, in the Expo plugin options or the helper calls. For `assert`, name the same package in `assert.lcovPathIncludes` and `assert.jacocoPackageIncludes`. For these keys, see [Configuration](/reference/config).
+
+## CI fails before coverage is pulled
+
+The simulator did not boot, WebDriverAgent timed out, the emulator could not reach Metro, or a GitHub Actions pin was wrong. None of these are coverage problems, but all of them stop the run before `flush()`.
+
+To resolve it, work through [CI with Appium](/integration/ci-appium), which lists common failures and the settings that fix them.

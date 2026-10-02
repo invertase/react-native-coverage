@@ -1,15 +1,18 @@
 {
   "$schema": "https://docs.page/schema.json",
   "name": "react-native-coverage",
-  "description": "Native code coverage for React Native - iOS and Android - without touching the native stuff. TurboModule flush, LCOV/Jacoco reports, assert in CI.",
-  "favicon": "/assets/brand/invertase-honeycomb.png",
+  "description": "iOS, Android, and TypeScript code coverage from end-to-end tests in a dedicated React Native test app, with a CI gate for empty coverage.",
+  "favicon": "/assets/brand/invertase-honeycomb-96x96.png",
   "logo": {
-    "light": "/assets/brand/invertase-honeycomb.png",
-    "dark": "/assets/brand/invertase-honeycomb.png"
+    "light": "/assets/brand/invertase-honeycomb-96x96.png",
+    "dark": "/assets/brand/invertase-honeycomb-96x96.png"
   },
   "theme": {
     "primary": "#C97A2B",
     "primaryDark": "#F5B454"
+  },
+  "og": {
+    "logo": "/assets/brand/invertase-honeycomb-256x256.png"
   },
   "social": {
     "x": "@invertaseio",
@@ -25,17 +28,13 @@
     "showGitHubCard": true,
     "links": [
       {
-        "title": "Codecov",
+        "title": "Open Codecov",
         "href": "https://app.codecov.io/gh/invertase/react-native-coverage"
-      },
-      {
-        "title": "Get started",
-        "href": "/app-developers",
-        "cta": true
       }
     ]
   },
   "agent": {
+    "placeholder": "Ask about setup, the CLI, or exit codes",
     "questions": [
       "How do I add native coverage to an Expo test app?",
       "How is this different from Codecov's JavaScript coverage?",
@@ -43,20 +42,41 @@
       "How do library maintainers get iOS native coverage from their test app?"
     ]
   },
+  "tabs": [
+    {
+      "id": "docs",
+      "title": "Documentation",
+      "href": "/"
+    },
+    {
+      "id": "reference",
+      "title": "Reference",
+      "href": "/reference"
+    }
+  ],
   "sidebar": [
     {
-      "group": "Getting Started",
+      "tab": "docs",
+      "group": "Introduction",
       "pages": [
-        { "title": "Introduction", "href": "/", "icon": "house" },
-        { "title": "Why native coverage", "href": "/why", "icon": "lightbulb" },
-        { "title": "Pattern C", "href": "/pattern-c", "icon": "shield-halved" }
+        {
+          "title": "Overview",
+          "href": "/",
+          "icon": "house"
+        },
+        {
+          "title": "Coverage",
+          "href": "/coverage",
+          "icon": "lightbulb"
+        }
       ]
     },
     {
-      "group": "Guides",
+      "tab": "docs",
+      "group": "Install",
       "pages": [
         {
-          "title": "App developers (Expo & RN CLI)",
+          "title": "App developers",
           "href": "/app-developers",
           "icon": "mobile-screen"
         },
@@ -65,42 +85,88 @@
           "href": "/library-maintainers",
           "icon": "cubes"
         },
-        { "title": "Agents", "href": "/agents", "icon": "robot" }
+        {
+          "title": "Coding agents",
+          "href": "/agents",
+          "icon": "robot"
+        }
       ]
     },
     {
-      "group": "Integration",
+      "tab": "docs",
+      "group": "Integrations",
       "pages": [
         {
           "title": "Android",
           "href": "/integration/android",
           "icon": "android"
         },
-        { "title": "iOS", "href": "/integration/ios", "icon": "apple" },
         {
-          "title": "JavaScript / TypeScript",
+          "title": "iOS",
+          "href": "/integration/ios",
+          "icon": "apple"
+        },
+        {
+          "title": "JavaScript and TypeScript",
           "href": "/integration/js",
           "icon": "js"
         },
         {
-          "title": "E2E timing",
-          "href": "/integration/e2e-timing",
-          "icon": "clock"
-        },
-        {
-          "title": "CI (Appium)",
+          "title": "CI with Appium",
           "href": "/integration/ci-appium",
           "icon": "gears"
+        },
+        {
+          "title": "Upload to Codecov",
+          "href": "/integration/codecov",
+          "icon": "chart-line"
         }
       ]
     },
     {
+      "tab": "docs",
+      "group": "Troubleshooting",
+      "pages": [
+        {
+          "title": "Empty or missing coverage",
+          "href": "/troubleshooting/empty-coverage",
+          "icon": "triangle-exclamation"
+        }
+      ]
+    },
+    {
+      "tab": "reference",
       "group": "Reference",
       "pages": [
-        { "title": "CLI", "href": "/cli", "icon": "terminal" },
-        { "title": "Config", "href": "/config", "icon": "sliders" },
-        { "title": "Releasing", "href": "/releasing", "icon": "rocket" }
+        {
+          "title": "Overview",
+          "href": "/reference",
+          "icon": "book"
+        },
+        {
+          "title": "CLI",
+          "href": "/reference/cli",
+          "icon": "terminal"
+        },
+        {
+          "title": "Configuration",
+          "href": "/reference/config",
+          "icon": "sliders"
+        },
+        {
+          "title": "Releasing",
+          "href": "/releasing",
+          "icon": "rocket"
+        }
       ]
     }
-  ]
+  ],
+  "redirects": {
+    "/cli": "/reference/cli",
+    "/config": "/reference/config",
+    "/why": "/coverage",
+    "/pattern-c": "/coverage#dedicated-test-app",
+    "/integration/e2e-timing": "/app-developers",
+    "/test-app": "/coverage#dedicated-test-app"
+  }
 }

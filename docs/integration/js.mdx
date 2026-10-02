@@ -1,63 +1,101 @@
-# JavaScript / TypeScript coverage
+---
+title: JavaScript and TypeScript
+description: Instrument Metro with babel-plugin-istanbul, pull global.__coverage__, and remap to TypeScript lines with NYC.
+---
 
-Complete the React Native coverage story alongside native LLVM/Jacoco:
+Native coverage shows that your Objective-C++, Swift, and Kotlin ran. This page is the JavaScript and TypeScript side of the same end-to-end run.
 
-| Layer | Tooling | Artifact |
-|-------|---------|----------|
-| Unit (package) | Jest `--coverage` | `coverage/unit/lcov.info` |
-| E2e JS/TS | `babel-plugin-istanbul` + NYC source-map remap | `coverage/js/lcov.info` |
-| Native iOS | llvm-cov | `lcov.info` |
-| Native Android | Jacoco | `jacocoTestReport.xml` |
+## Instrument Metro
 
-## Instrument Metro (e2e)
+When `RN_COVERAGE_JS=1`, load `babel-plugin-istanbul` so you leave a normal development bundle untouched. Add this configuration to the [test app](/coverage#dedicated-test-app)'s `babel.config.js` file:
 
-Set `RN_COVERAGE_JS=1` before starting Metro (CI scripts do this). Example babel configs load `babel-plugin-istanbul` only when that env is set.
+```js
+const path = require('path');
 
-`flush()` dumps `global.__coverage__` via TurboModule `dumpJsCoverage` **before** the native Emma/LLVM flush:
+const workspaceRoot = path.resolve(__dirname, '..');
 
-- Android → `filesDir/coverage-final.json` (`files/coverage-final.json` under `run-as`)
-- iOS → `Documents/coverage-final.json`
+module.exports = function (api) {
+  // RN_COVERAGE_JS must invalidate the cached config, not stick from first use.
+  api.cache.using(() => process.env.RN_COVERAGE_JS);
+  const plugins = [];
+  if (process.env.RN_COVERAGE_JS === '1') {
+    plugins.push([
+      'istanbul',
+      {
+        cwd: workspaceRoot,
+        include: [
+          'tests/App.tsx',
+          'tests/index.ts',
+          'tests/src/**/*.{ts,tsx,js,jsx}',
+          'packages/my-lib/src/**/*.{ts,tsx}',
+        ],
+      },
+    ]);
+  }
+  return {
+    presets: ['babel-preset-expo'],
+    plugins,
+  };
+};
+```
 
-## CLI
+Start Metro with the variable set:
+
+```sh
+RN_COVERAGE_JS=1 npx expo start
+```
+
+When the suite ends, `Coverage.flush()` dumps `global.__coverage__` through the TurboModule before the native flush. The file lands at `files/coverage-final.json` on Android and `Documents/coverage-final.json` on iOS.
+
+## Pull and report
+
+Pull coverage from the device, then remap it:
 
 ```sh
 rn-coverage js pull --platform android --output coverage/js
-rn-coverage js pull --platform ios --device <udid> --output coverage/js
+rn-coverage js pull --platform ios --device UDID --output coverage/js
 
 rn-coverage js report \
   --input coverage/js/coverage-final.json \
   --output coverage/js \
   --cwd . \
-  --nyc-config example/nyc.config.js
+  --nyc-config tests/nyc.config.js
 ```
 
-NYC is configured with `sourceMap: true` and `exclude-after-remap: true` so LCOV `SF:` paths point at **TypeScript** sources (not only the Metro-transformed JS line map). Ship a `nyc.config.js` next to the harness (see `example/nyc.config.js`).
+`js report` runs NYC with `sourceMap: true` and `exclude-after-remap: true`, so the LCOV `SF:` paths point at your TypeScript sources rather than the Metro output. Put a `nyc.config.js` file next to the test app:
 
-Both harness configs include their entrypoint/App source and the shared
-`example/fixture-lib/src` workspace. CI runs `assert-js-lcov.js` after NYC and
-requires non-zero records for both the harness and fixture library; merely
-creating an LCOV file is not sufficient.
+```js
+const path = require('path');
 
-### Instrumentation scope is workspace-rooted
+module.exports = {
+  'check-coverage': false,
+  include: [
+    'tests/App.tsx',
+    'tests/index.ts',
+    'tests/src/**/*.{ts,tsx,js,jsx}',
+    'packages/my-lib/src/**/*.{ts,tsx}',
+  ],
+  exclude: ['**/node_modules/**', '**/__tests__/**'],
+  cwd: path.resolve(__dirname, '..'),
+  sourceMap: true,
+  'exclude-after-remap': true,
+  instrument: false,
+  reporter: ['lcov', 'text-summary', 'html'],
+};
+```
 
-`coverage-fixture` is a yarn workspace symlink, so Metro resolves it to the
-realpath `example/fixture-lib/src/*.ts` — outside `example-dynamic/`. A
-default-configured `babel-plugin-istanbul` roots `test-exclude` at the babel
-cwd and silently skips everything outside it, so the bundle builds and the e2e
-passes while the LCOV quietly omits the shared library.
+## Include workspace libraries
 
-Both harnesses therefore pass explicit `cwd`/`include` options to
-`babel-plugin-istanbul` and set matching `cwd`/`include` in `nyc.config.js`,
-all rooted at the monorepo. `SF:` paths are workspace-relative
-(`example/fixture-lib/src/index.ts`, `example-dynamic/App.tsx`) in every cell.
-`scripts/ci/assert-istanbul-scope.js` runs in the `unit` job and fails if
-either harness stops instrumenting the fixture sources — a device-free guard,
-since the e2e cells themselves cannot catch a scope regression.
+<Warning>
+  A default `babel-plugin-istanbul` roots `test-exclude` at the Babel working directory and skips every file outside it. A yarn workspace library is a symlink, so Metro hands Babel its real path, outside the test app. The bundle builds, the suite passes, and the LCOV omits the library.
+</Warning>
 
-## Codecov
+The fix is in both preceding snippets. Pass `cwd` and `include` to the Babel plugin and to the `nyc.config.js` file, rooted at the monorepo, and list the library's sources in `include`. `SF:` paths then come out workspace-relative, such as `packages/my-lib/src/index.ts`, on every platform.
 
-CI uploads unit LCOV, e2e native LCOV/Jacoco, and e2e JS LCOV with distinct
-flags (`unit-js`, `e2e-ios-dynamic`, `e2e-ios-static`, and `e2e-android`).
-Reports are explicit; automatic report search is disabled. Configure the
-repository-specific `CODECOV_TOKEN`. Upload failures are blocking except for
-Dependabot, and uploads run only after successful report generation.
+## Upload to Codecov
+
+Upload the JavaScript LCOV under its own flag so it stays separate from the native reports:
+
+```sh
+codecov -f coverage/js/lcov.info -F e2e-js
+```
