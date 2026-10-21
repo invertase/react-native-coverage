@@ -79,7 +79,7 @@ This repository uses that shape: library at the root, `example/` (Expo, static l
 
 ## Example from this package
 
-Invertase CI runs this package's harness apps and uploads the reports. The numbers below are that harness, not a product app.
+Invertase CI runs this package's harness apps and uploads the reports. The numbers below are that harness, not a product app. Flag names below are **this repository's matrix** (`e2e-ios-dynamic` / `e2e-ios-static` / …). A single consumer test app usually uses `e2e-ios` / `e2e-android` / `e2e-js` instead — see [App developers](/app-developers#optional-upload-to-codecov).
 
 | Flag | What ran | Coverage |
 |------|----------|---------:|
@@ -95,3 +95,13 @@ Those numbers come from an iOS Simulator and Android emulator running the harnes
   alt="Line-by-line view of ios/Coverage.mm at 71.88 percent, with Objective-C++ TurboModule code covered and partially covered"
   caption="Line hits in `ios/Coverage.mm` from the harness."
 />
+
+## The gap this closes
+
+[**React Native Firebase**](https://github.com/invertase/react-native-firebase), one of the most-installed libraries in the ecosystem, already depends on `react-native-coverage` in its dedicated `tests/` app. Its Codecov shows `android-native` **live at 65.9%** — while the `ios-native` flag still reads **`0.0%`** today.
+
+The slot is wired. The Android native hits are real. The iOS native number is the hardest half, and the rollout to turn that zero into a number is exactly what this package drives.
+
+<Success>
+  If a flagship library's iOS native coverage is still catching up, yours has had no path at all — until now. This repository already shows iOS-dynamic at 90.6%; the tooling to reproduce that anywhere is what ships here.
+</Success>
