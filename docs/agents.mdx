@@ -38,7 +38,9 @@ The pipeline must not pass with empty native coverage. The sequence is:
   <Step title="Pull and report">
     ```sh
     rn-coverage android pull && rn-coverage android report
-    rn-coverage ios pull && rn-coverage ios export && rn-coverage ios report
+    rn-coverage ios pull --device UDID
+    rn-coverage ios export --derived-data DERIVED_DATA_PATH
+    rn-coverage ios report --derived-data DERIVED_DATA_PATH
     ```
   </Step>
   <Step title="Assert">
@@ -66,7 +68,7 @@ Set which paths and packages must have hits with `assert.lcovPathIncludes` and `
 
 ## Check the result
 
-The working example is this repository. Its [Codecov dashboard](https://app.codecov.io/gh/invertase/react-native-coverage) carries separate [`e2e-ios-dynamic`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-dynamic), [`e2e-ios-static`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-static), and [`e2e-android`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-android) flags with hits from iOS Simulator and Android emulator runs. Match that pattern: one flag per platform, each with non-zero hits.
+The working example is this repository. Its [Codecov dashboard](https://app.codecov.io/gh/invertase/react-native-coverage) carries this repository's **matrix** flags — [`e2e-ios-dynamic`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-dynamic), [`e2e-ios-static`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-ios-static), and [`e2e-android`](https://app.codecov.io/gh/invertase/react-native-coverage/flags/e2e-android) — with hits from iOS Simulator and Android emulator runs. A single consumer test app usually uses `e2e-ios` / `e2e-android` / `e2e-js` instead (see [App developers](/app-developers#optional-upload-to-codecov)). Either way: one flag per platform cell, each with non-zero hits.
 
 <CardGroup cols={2}>
   <Card title="CLI" icon="terminal" href="/reference/cli">

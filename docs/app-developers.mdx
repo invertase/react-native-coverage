@@ -4,7 +4,7 @@ description: Install react-native-coverage in an Expo or React Native CLI test a
 ---
 
 <Warning>
-  Install `react-native-coverage` in a [dedicated test app](/coverage#dedicated-test-app) only, never the app you ship.
+  Install `react-native-coverage` into a [dedicated test app](/coverage#dedicated-test-app) only — never your shipping product app. Autolinking scans dependencies, so keep the package out of the production `package.json` entirely, not just in `devDependencies`.
 </Warning>
 
 ## Before you begin
@@ -159,13 +159,17 @@ Your test runner decides when. The package does not ship Appium, Detox, or Maest
   <Step title="Pull the files from the device">
     ```sh
     rn-coverage android pull
-    rn-coverage ios pull
+    rn-coverage ios pull --device UDID
     ```
   </Step>
   <Step title="Turn them into reports">
     ```sh
-    rn-coverage android report                       # JaCoCo XML
-    rn-coverage ios export && rn-coverage ios report # LCOV and the llvm-cov report
+    rn-coverage android report
+    # Default JaCoCo XML: android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+    # Copy or set android.jacocoReportXml / --jacoco-xml if you want coverage/android/jacocoTestReport.xml
+
+    rn-coverage ios export --derived-data DERIVED_DATA_PATH
+    rn-coverage ios report --derived-data DERIVED_DATA_PATH
     ```
   </Step>
   <Step title="Fail the job when coverage is empty">
@@ -183,11 +187,18 @@ For JavaScript and TypeScript coverage remapped to your TypeScript sources, add 
 
 Upload each report under its own flag so iOS, Android, and JavaScript stay separate on the dashboard. For more information about how Codecov relates to this package, see [Upload to Codecov](/integration/codecov).
 
+**Single test app** flags (typical consumer CI — one iOS cell, one Android cell, optional JS):
+
 ```sh
+# After android report, either upload the Gradle default path or a copied file:
+#   android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+# or coverage/android/jacocoTestReport.xml (only if you copied / set --jacoco-xml)
 codecov -f coverage/ios/lcov.info -F e2e-ios
 codecov -f coverage/android/jacocoTestReport.xml -F e2e-android
 codecov -f coverage/js/lcov.info -F e2e-js
 ```
+
+This repository's own CI uses a **matrix** of flags (`e2e-ios-dynamic`, `e2e-ios-static`, `e2e-android`, `unit-js`) — see [Coverage](/coverage#example-from-this-package) and [Library maintainers](/library-maintainers#upload-one-codecov-flag-per-platform). Do not copy those matrix names into a single-app pipeline unless you run the same split.
 
 ## Next steps
 

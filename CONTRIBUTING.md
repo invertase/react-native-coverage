@@ -2,7 +2,7 @@
 
 Contributions are always welcome, no matter how large or small!
 
-This package targets **dedicated test apps only** (Pattern C). See `docs/coverage.mdx` and `AGENTS.md`.
+This package targets **dedicated test apps only**. See `docs/coverage.mdx` (`#dedicated-test-app`) and `AGENTS.md`.
 
 License: Apache-2.0. Please follow the [code of conduct](./CODE_OF_CONDUCT.md).
 
@@ -118,7 +118,7 @@ When you're sending a pull request:
 
 - `feat: add ios summary JSON schema`
 - `fix: exit 2 when fixture LCOV is empty`
-- `docs: document Pattern C consumer checklist`
+- `docs: document dedicated test app consumer checklist`
 - `chore: bump Appium in e2e workspace`
 
 Local check: `echo "feat: your subject" | yarn commitlint`
