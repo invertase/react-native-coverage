@@ -10,8 +10,8 @@ Unit tests and the test app measure different things. Keep both layers:
 | Layer | Tooling | Artifact | Codecov flag |
 |-------|---------|----------|--------------|
 | Unit tests | Jest `--coverage` | `coverage/unit/lcov.info` | `unit-js` |
-| Test app, JavaScript and TypeScript | `babel-plugin-istanbul` and the NYC (Istanbul CLI) remap | `coverage/js/lcov.info` | `e2e-js` |
-| Test app, native iOS | TurboModule flush, then `llvm-cov` | `lcov.info` | `e2e-ios-dynamic`, `e2e-ios-static` |
+| Test app, JavaScript and TypeScript | `babel-plugin-istanbul` and the NYC (Istanbul CLI) remap | `coverage/js/lcov.info` | `e2e-js` (single-app) |
+| Test app, native iOS | TurboModule flush, then `llvm-cov` | `lcov.info` | Single-app: `e2e-ios`. This repo's matrix: `e2e-ios-dynamic`, `e2e-ios-static` |
 | Test app, native Android | TurboModule flush, then JaCoCo | `jacocoTestReport.xml` | `e2e-android` |
 
 ## Before you begin
@@ -75,6 +75,8 @@ module.exports = {
     lcovPathIncludes: ['packages/my-lib'],   // at least one LCOV SF: path must match and have hits
     jacocoPackageIncludes: ['com.my.lib'],   // at least one JaCoCo package must have LINE hits
     defaultLcovPath: 'coverage/ios/lcov.info',
+    // Gradle default after `android report` is under android/app/build/reports/jacoco/…
+    // Point here only after you copy the XML (or set android.jacocoReportXml / --jacoco-xml).
     defaultJacocoXmlPath: 'coverage/android/jacocoTestReport.xml',
   },
 };
@@ -84,12 +86,15 @@ For more information about every key, see [Configuration](/reference/config).
 
 ## Upload one Codecov flag per platform
 
+**This repository's matrix** (static + dynamic iOS cells). A single consumer test app usually uses the simpler `e2e-ios` / `e2e-android` / `e2e-js` set on [App developers](/app-developers#optional-upload-to-codecov) instead.
+
 Upload each cell under its own flag and disable automatic report search, as this repository's [`codecov.yml`](https://github.com/invertase/react-native-coverage/blob/main/codecov.yml) file does:
 
 ```sh
 codecov -f coverage/unit/lcov.info               -F unit-js
 codecov -f coverage/ios-dynamic/lcov.info        -F e2e-ios-dynamic
 codecov -f coverage/ios-static/lcov.info         -F e2e-ios-static
+# JaCoCo: upload the Gradle default path, or a file you copied to coverage/android/
 codecov -f coverage/android/jacocoTestReport.xml -F e2e-android
 ```
 

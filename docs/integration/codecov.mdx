@@ -16,4 +16,15 @@ After pull and report, upload each file under its own Codecov flag so platforms 
 | TypeScript LCOV | `rn-coverage js report` (when `RN_COVERAGE_JS=1`) |
 | Unit LCOV | Jest `--coverage` (library maintainers) |
 
-Paths depend on your config and CI layout. Command examples are on [App developers](/app-developers). For a live harness upload from this package (not your product app), see [Coverage](/coverage).
+### Flag sets (do not mix casually)
+
+| Audience | Typical flags |
+|----------|---------------|
+| **Single test app** | `e2e-ios`, `e2e-android`, optional `e2e-js` — see [App developers](/app-developers#optional-upload-to-codecov) |
+| **This repository's matrix** | `e2e-ios-dynamic`, `e2e-ios-static`, `e2e-android`, `unit-js` — see [Coverage](/coverage#example-from-this-package) and [Library maintainers](/library-maintainers#upload-one-codecov-flag-per-platform) |
+
+### JaCoCo XML path
+
+`rn-coverage android report` writes JaCoCo XML to the Gradle default (`android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml` unless you set `android.jacocoReportXml`). Examples that use `coverage/android/jacocoTestReport.xml` assume you copied the file there or passed `--jacoco-xml` / config. Upload whichever path actually exists.
+
+Paths otherwise depend on your config and CI layout. Command examples are on [App developers](/app-developers). For a live harness upload from this package (not your product app), see [Coverage](/coverage).
