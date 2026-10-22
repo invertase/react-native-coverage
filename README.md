@@ -2,8 +2,7 @@
   <a href="https://docs.page/invertase/react-native-coverage">
     <img src="./docs/assets/brand/invertase-honeycomb-96x96.png" alt="Invertase" height="96" />
   </a>
-  <br /><br />
-  <strong>Native code coverage for React Native</strong><br /><br />
+  <h1 align="center">Native code coverage for React Native</h1>
   <span>A React Native library for iOS and Android that records which lines of your native code your end-to-end tests ran. Use this package to collect coverage, write LCOV, JaCoCo, and TypeScript reports, and fail CI when a report is empty.</span>
 </p>
 
