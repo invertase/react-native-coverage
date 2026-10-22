@@ -143,7 +143,7 @@ The package also measures its own native code. Its iOS source file, [`ios/Covera
 - Bugs & feature requests: [Open an issue](https://github.com/invertase/react-native-coverage/issues/new/choose)
 - [Pull requests](https://github.com/invertase/react-native-coverage/pulls)
 - [Contributing guide](./CONTRIBUTING.md)
-- [Releasing](https://docs.page/invertase/react-native-coverage/releasing)
+- [Releasing](https://docs.page/invertase/react-native-coverage/reference/releasing)
 - [Code of Conduct](https://github.com/invertase/.github/blob/main/CODE_OF_CONDUCT.md)
 
 ## License
