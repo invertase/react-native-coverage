@@ -155,7 +155,7 @@
         },
         {
           "title": "Releasing",
-          "href": "/releasing",
+          "href": "/reference/releasing",
           "icon": "rocket"
         }
       ]
@@ -163,6 +163,7 @@
   ],
   "redirects": {
     "/cli": "/reference/cli",
+    "/releasing": "/reference/releasing",
     "/config": "/reference/config",
     "/why": "/coverage",
     "/pattern-c": "/coverage#dedicated-test-app",

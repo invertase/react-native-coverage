@@ -125,4 +125,4 @@ Local check: `echo "feat: your subject" | yarn commitlint`
 
 ### Releasing
 
-Maintainers: see [docs/releasing.mdx](./docs/releasing.mdx). Releases are **manual** (`workflow_dispatch` + semantic-release). Do not publish from a laptop unless performing the one-time human bootstrap (separate from day-to-day CI releases).
+Maintainers: see [docs/reference/releasing.mdx](./docs/reference/releasing.mdx). Releases are **manual** (`workflow_dispatch` + semantic-release). Do not publish from a laptop unless performing the one-time human bootstrap (separate from day-to-day CI releases).
