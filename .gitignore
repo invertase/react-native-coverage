@@ -96,3 +96,7 @@ nitrogen/
 # Keep export CLI fixtures (path contains Build/ which is otherwise ignored)
 !fixtures/export-layout/
 !fixtures/export-layout/**
+
+# Jacoco redirected-buildDirectory unit fixture outputs
+fixtures/android-build-dir/.redirected-build/
+fixtures/android-build-dir/.gradle/

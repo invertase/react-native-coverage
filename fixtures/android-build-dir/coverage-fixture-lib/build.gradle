@@ -1,0 +1,4 @@
+// Stand-in for com.android.library so matchedLibraryProjects() picks this up
+// without requiring AGP in the unit fixture.
+ext.rnCoverageTreatAsCoveredLibrary = true
+layout.buildDirectory.set(file("${rootDir}/.redirected-build/lib"))

@@ -21,9 +21,11 @@ jacoco {
   toolVersion = '0.8.14'
 }
 
-android {
-  jacoco {
-    version = '0.8.14'
+pluginManager.withPlugin('com.android.application') {
+  android {
+    jacoco {
+      version = '0.8.14'
+    }
   }
 }
 
@@ -50,22 +52,41 @@ def rnCoverageMatchers() {
 def matchedLibraryProjects() {
   def matchers = rnCoverageMatchers()
   return rootProject.subprojects.findAll { proj ->
-    proj.plugins.hasPlugin('com.android.library') &&
-      matchers.any { matcher -> proj.name.contains(matcher) }
+    def treatAsLibrary = proj.plugins.hasPlugin('com.android.library') ||
+      (proj.ext.has('rnCoverageTreatAsCoveredLibrary') &&
+        proj.ext.rnCoverageTreatAsCoveredLibrary)
+    treatAsLibrary && matchers.any { matcher -> proj.name.contains(matcher) }
   }
 }
 
+/**
+ * Collect Jacoco class trees for every AGP variant under each matched library's
+ * layout.buildDirectory (debug, release, and flavored variants when present).
+ */
 def coverageClassDirectories() {
   def excludes = project.ext.rnCoverageClassExcludes
   def trees = []
   matchedLibraryProjects().each { proj ->
-    def javacDebug = file("${proj.projectDir}/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes")
-    def kotlinDebug = file("${proj.projectDir}/build/tmp/kotlin-classes/debug")
-    if (javacDebug.exists()) {
-      trees << fileTree(dir: javacDebug, excludes: excludes)
+    // Respect proj.layout.buildDirectory (consumers may redirect away from projectDir/build).
+    def buildRoot = proj.layout.buildDirectory.get().asFile
+
+    def javacRoot = new File(buildRoot, 'intermediates/javac')
+    if (javacRoot.directory) {
+      javacRoot.eachDir { variantDir ->
+        variantDir.eachDir { compileDir ->
+          def classesDir = new File(compileDir, 'classes')
+          if (classesDir.directory) {
+            trees << fileTree(dir: classesDir, excludes: excludes)
+          }
+        }
+      }
     }
-    if (kotlinDebug.exists()) {
-      trees << fileTree(dir: kotlinDebug, excludes: excludes)
+
+    def kotlinRoot = new File(buildRoot, 'tmp/kotlin-classes')
+    if (kotlinRoot.directory) {
+      kotlinRoot.eachDir { variantDir ->
+        trees << fileTree(dir: variantDir, excludes: excludes)
+      }
     }
   }
   return files(trees)
@@ -87,12 +108,14 @@ def coverageSourceDirectories() {
 }
 
 def coverageExecutionData(List<String> includes) {
-  def trees = [fileTree(dir: project.buildDir, includes: includes)]
+  // Prefer layout.buildDirectory so redirected build dirs stay consistent with class trees.
+  def appBuildDir = layout.buildDirectory.get().asFile
+  def trees = [fileTree(dir: appBuildDir, includes: includes)]
   matchedLibraryProjects().each { proj ->
-    trees << fileTree(dir: proj.buildDir, includes: includes)
+    trees << fileTree(dir: proj.layout.buildDirectory.get().asFile, includes: includes)
   }
-  // Host-pulled Emma dumps commonly land under app/build/outputs/code_coverage
-  trees << fileTree(dir: "${project.buildDir}/outputs", includes: includes)
+  // Host-pulled Emma dumps commonly land under layout.buildDirectory/outputs/code_coverage
+  trees << fileTree(dir: new File(appBuildDir, 'outputs'), includes: includes)
   return files(trees)
 }
 
@@ -129,4 +152,96 @@ tasks.register('jacocoAndroidTestReport', JacocoReport) {
   description = 'E2e-only Jacoco report (*.ec from Emma flush / pull)'
   configureCoverageJacocoReport(it)
   executionData.from = coverageExecutionData(['**/*.ec'])
+}
+
+/**
+ * Print the app project's effective layout.buildDirectory (absolute path).
+ * Used by `rn-coverage android pull` so the default .ec staging dir follows
+ * redirected build directories. Quiet-friendly: one path line only.
+ */
+tasks.register('rnCoveragePrintAppBuildDir') {
+  description = 'Print app layout.buildDirectory for rn-coverage android pull'
+  doLast {
+    println layout.buildDirectory.get().asFile.absolutePath
+  }
+}
+
+/**
+ * Deterministic self-test for redirected layout.buildDirectory (unit fixture).
+ * Enabled with -PrnCoverageBuildDirSelfTest=true. Seeds debug+release class
+ * trees and .ec/.exec under each matched library's buildDirectory, then asserts
+ * coverageClassDirectories / coverageExecutionData resolve under those roots
+ * (not projectDir/build).
+ */
+if (findProperty('rnCoverageBuildDirSelfTest') == 'true') {
+  tasks.register('rnCoverageBuildDirSelfTest') {
+    description = 'Assert Jacoco class/exec trees follow redirected layout.buildDirectory'
+    doLast {
+      def libs = matchedLibraryProjects()
+      assert !libs.isEmpty() : 'rnCoverageBuildDirSelfTest: no matched library projects'
+
+      libs.each { proj ->
+        def buildRoot = proj.layout.buildDirectory.get().asFile.canonicalFile
+        def defaultBuild = new File(proj.projectDir, 'build').canonicalFile
+        assert buildRoot.canonicalPath != defaultBuild.canonicalPath :
+          "rnCoverageBuildDirSelfTest: :${proj.name} buildDirectory was not redirected (still ${buildRoot})"
+
+        ['debug', 'release'].each { variant ->
+          def variantCap = variant.capitalize()
+          def javac = new File(
+            buildRoot,
+            "intermediates/javac/${variant}/compile${variantCap}JavaWithJavac/classes"
+          )
+          javac.mkdirs()
+          new File(javac, 'Sentinel.class').bytes = [0] as byte[]
+          def kotlin = new File(buildRoot, "tmp/kotlin-classes/${variant}")
+          kotlin.mkdirs()
+          new File(kotlin, 'SentinelKt.class').bytes = [0] as byte[]
+        }
+        def libEc = new File(buildRoot, 'outputs/code_coverage')
+        libEc.mkdirs()
+        new File(libEc, 'lib.exec').bytes = [0] as byte[]
+      }
+
+      def appBuild = layout.buildDirectory.get().asFile.canonicalFile
+      def appDefault = new File(projectDir, 'build').canonicalFile
+      assert appBuild.canonicalPath != appDefault.canonicalPath :
+        "rnCoverageBuildDirSelfTest: app buildDirectory was not redirected (still ${appBuild})"
+      def appEcDir = new File(appBuild, 'outputs/code_coverage')
+      appEcDir.mkdirs()
+      new File(appEcDir, 'emulator_coverage.ec').bytes = [0] as byte[]
+
+      def classFiles = coverageClassDirectories().files
+      assert !classFiles.isEmpty() : 'rnCoverageBuildDirSelfTest: no class files discovered'
+      classFiles.each { f ->
+        def underRedirect = libs.any { proj ->
+          f.canonicalPath.startsWith(
+            proj.layout.buildDirectory.get().asFile.canonicalPath + File.separator
+          )
+        }
+        assert underRedirect :
+          "rnCoverageBuildDirSelfTest: class file outside redirected lib build dirs: ${f}"
+        libs.each { proj ->
+          def leaked = new File(proj.projectDir, 'build').canonicalPath + File.separator
+          assert !f.canonicalPath.startsWith(leaked) :
+            "rnCoverageBuildDirSelfTest: class file under projectDir/build: ${f}"
+        }
+      }
+
+      def execFiles = coverageExecutionData(['**/*.exec', '**/*.ec']).files
+      assert !execFiles.isEmpty() : 'rnCoverageBuildDirSelfTest: no execution data discovered'
+      execFiles.each { f ->
+        def underApp = f.canonicalPath.startsWith(appBuild.canonicalPath + File.separator)
+        def underLib = libs.any { proj ->
+          f.canonicalPath.startsWith(
+            proj.layout.buildDirectory.get().asFile.canonicalPath + File.separator
+          )
+        }
+        assert underApp || underLib :
+          "rnCoverageBuildDirSelfTest: execution file outside redirected build dirs: ${f}"
+      }
+
+      println "rnCoverageBuildDirSelfTest: ok classes=${classFiles.size()} exec=${execFiles.size()}"
+    }
+  }
 }

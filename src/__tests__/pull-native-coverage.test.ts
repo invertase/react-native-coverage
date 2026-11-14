@@ -7,9 +7,13 @@ import { resolveCoverageConfig } from '../config';
 import { EXIT_STRICT_EMPTY, StrictEmptyError } from '../exit-codes';
 import {
   androidCoverageFileExists,
+  DEFAULT_ANDROID_COVERAGE_PULL_DIR,
+  GRADLE_APP_BUILD_DIR_QUERY_TIMEOUT_MS,
   pullAndroidCoverage,
   pullAndroidCoverageWithRetry,
   pullIosCoverage,
+  queryGradleAppBuildDirectory,
+  resolveAndroidCoveragePullDir,
   resolveAndroidDeviceId,
   runJacocoTestReport,
 } from '../pull-native-coverage';
@@ -56,6 +60,96 @@ describe('resolveAndroidDeviceId', () => {
     );
     mockedExecSync.mockReturnValue(fixture);
     expect(resolveAndroidDeviceId()).toBe('emulator-5554');
+  });
+});
+
+describe('resolveAndroidCoveragePullDir', () => {
+  it('uses config android.coveragePullDir when set', () => {
+    const dir = resolveAndroidCoveragePullDir({
+      cwd: '/repo',
+      config: resolveCoverageConfig({
+        android: { coveragePullDir: 'custom/out/code_coverage' },
+      }),
+      queryAppBuildDir: () => {
+        throw new Error('should not query gradle');
+      },
+    });
+    expect(dir).toBe(path.resolve('/repo', 'custom/out/code_coverage'));
+  });
+
+  it('joins queried app buildDirectory with outputs/code_coverage', () => {
+    const dir = resolveAndroidCoveragePullDir({
+      cwd: '/repo',
+      config: resolveCoverageConfig(),
+      queryAppBuildDir: () => '/redirected/app-build',
+    });
+    expect(dir).toBe(
+      path.join('/redirected/app-build', 'outputs', 'code_coverage')
+    );
+  });
+
+  it('falls back to conventional app/build path when query returns null', () => {
+    const dir = resolveAndroidCoveragePullDir({
+      cwd: '/repo',
+      config: resolveCoverageConfig(),
+      queryAppBuildDir: () => null,
+    });
+    expect(dir).toBe(path.resolve('/repo', DEFAULT_ANDROID_COVERAGE_PULL_DIR));
+  });
+});
+
+describe('queryGradleAppBuildDirectory', () => {
+  afterEach(() => {
+    mockedSpawnSync.mockReset();
+  });
+
+  it('queries Gradle with a timeout and returns the last absolute path', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-query-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    const gradlew = path.join(tmp, gradlewName);
+    fs.writeFileSync(gradlew, '');
+
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      signal: null,
+      output: [],
+      pid: 1,
+      stdout: 'noise\n/redirected/app/build\n',
+      stderr: '',
+    } as ReturnType<typeof spawnSync>);
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBe('/redirected/app/build');
+    expect(mockedSpawnSync).toHaveBeenCalledWith(
+      gradlew,
+      [':app:rnCoveragePrintAppBuildDir', '-q', '--no-daemon'],
+      expect.objectContaining({
+        cwd: tmp,
+        timeout: GRADLE_APP_BUILD_DIR_QUERY_TIMEOUT_MS,
+      })
+    );
+  });
+
+  it('returns null when spawnSync times out so callers can fall back', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-timeout-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    fs.writeFileSync(path.join(tmp, gradlewName), '');
+
+    const timedOut = Object.assign(new Error('Timed out'), {
+      code: 'ETIMEDOUT',
+    });
+    mockedSpawnSync.mockReturnValue({
+      status: null,
+      signal: 'SIGTERM',
+      output: [],
+      pid: 1,
+      stdout: '',
+      stderr: '',
+      error: timedOut,
+    } as ReturnType<typeof spawnSync>);
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
   });
 });
 

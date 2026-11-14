@@ -21,7 +21,7 @@ Every page on this site is also available as Markdown by adding `.md` to its URL
 
 - Use the New Architecture only. Do not write old-architecture bridging shims.
 - Do not edit the `Podfile` with a regular expression to add LLVM flags. Use the CocoaPods helper, `apply_post_install!` from the `cocoapods/coverage_post_install.rb` file. Under Expo keep `forceDynamicFrameworks: false`. Only on a React Native CLI app whose React builds as dynamic frameworks, set it `true`.
-- Put the Android `.ec` file under the app `buildDir`. `rn-coverage android pull` stages it where JaCoCo's `fileTree` includes it. Pulling only into the `artifacts/` directory leaves `jacocoTestReport` empty.
+- Put the Android `.ec` file under the app build directory. `rn-coverage android pull` stages it where JaCoCo's `fileTree` includes it. Pulling only into the `artifacts/` directory leaves `jacocoTestReport` empty.
 - Pin GitHub Actions by full commit SHA.
 
 ## CI contract

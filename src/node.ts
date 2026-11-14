@@ -44,6 +44,9 @@ export {
   pullIosCoverage,
   runJacocoTestReport,
   getAdbBinary,
+  resolveAndroidCoveragePullDir,
+  queryGradleAppBuildDirectory,
+  DEFAULT_ANDROID_COVERAGE_PULL_DIR,
 } from './pull-native-coverage';
 export {
   pullAndroidJsCoverage,

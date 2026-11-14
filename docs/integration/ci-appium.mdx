@@ -40,7 +40,7 @@ The CI scripts are under `scripts/ci/` and the WebDriverIO specs under `e2e/` in
 ## Android: pull coverage for JaCoCo
 
 1. Create the parent of the staging path, `android.detoxStagingPath` with a default of `/data/local/tmp/coverage/coverage.ec`, before `run-as … cat … > staging`. `rn-coverage android pull` does this for you.
-2. Land `emulator_coverage.ec` under the app `buildDir`, for example `android/app/build/outputs/code_coverage/`. JaCoCo's `executionData` is a `fileTree` over `project.buildDir` plus the matched libraries. A file pulled only into `artifacts/` leaves `:app:jacocoTestReport` skipped with empty data.
+2. Land `emulator_coverage.ec` under the app build directory (default pull stages `<layout.buildDirectory>/outputs/code_coverage/`). JaCoCo's `executionData` is a `fileTree` over the app's `layout.buildDirectory` plus matched library layout roots. A file pulled only into `artifacts/` leaves `:app:jacocoTestReport` skipped with empty data.
 3. Run `rn-coverage assert` with slash or dot package names. JaCoCo XML uses slashes, `com/coverage/fixture`, and config often uses dots, `coverage.fixture`.
 
 ## Pin GitHub Actions

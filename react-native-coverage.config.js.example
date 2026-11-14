@@ -25,6 +25,8 @@ module.exports = {
     coverageRelativePath: 'files/coverage.ec',
     jacocoReportXml:
       'android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml',
+    // Empty → query :app:rnCoveragePrintAppBuildDir, else android/app/build/outputs/code_coverage
+    coveragePullDir: '',
   },
   sourcePathRewrite: [
     { kind: 'after-marker', marker: '/packages/', includeMarker: true },

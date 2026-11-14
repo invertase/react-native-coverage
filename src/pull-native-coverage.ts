@@ -62,6 +62,99 @@ export function androidCoverageFileExists(
   }
 }
 
+/** Fallback when Gradle buildDirectory cannot be queried (common non-redirected apps). */
+export const DEFAULT_ANDROID_COVERAGE_PULL_DIR =
+  'android/app/build/outputs/code_coverage';
+
+/**
+ * Cap for `:app:rnCoveragePrintAppBuildDir` (cold `--no-daemon` Gradle).
+ * On timeout/failure, pull falls back to {@link DEFAULT_ANDROID_COVERAGE_PULL_DIR}.
+ */
+export const GRADLE_APP_BUILD_DIR_QUERY_TIMEOUT_MS = 90_000;
+
+export type ResolveAndroidCoveragePullDirOptions = {
+  cwd?: string;
+  androidDir?: string;
+  config?: CoverageConfig;
+  /** Injected for tests — return absolute app buildDirectory or null. */
+  queryAppBuildDir?: (androidDir: string) => string | null;
+};
+
+/**
+ * Resolve the host staging directory for pulled Emma `.ec` files.
+ * Prefer config `android.coveragePullDir`, then the app's effective
+ * `layout.buildDirectory` via `:app:rnCoveragePrintAppBuildDir`, then the
+ * conventional `android/app/build/outputs/code_coverage` path.
+ */
+export function resolveAndroidCoveragePullDir(
+  options: ResolveAndroidCoveragePullDirOptions = {}
+): string {
+  const cwd = options.cwd ?? process.cwd();
+  const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
+  const configured = config.android.coveragePullDir?.trim();
+  if (configured) {
+    return path.resolve(cwd, configured);
+  }
+
+  const androidDir = path.resolve(
+    cwd,
+    options.androidDir ?? path.join(cwd, 'android')
+  );
+  const query =
+    options.queryAppBuildDir ??
+    ((dir: string) => queryGradleAppBuildDirectory(dir));
+  const appBuildDir = query(androidDir);
+  if (appBuildDir) {
+    return path.join(appBuildDir, 'outputs', 'code_coverage');
+  }
+
+  return path.resolve(cwd, DEFAULT_ANDROID_COVERAGE_PULL_DIR);
+}
+
+/**
+ * Query `:app:rnCoveragePrintAppBuildDir` for the app layout.buildDirectory.
+ * Returns null when Gradle is unavailable or the task is missing.
+ */
+export function queryGradleAppBuildDirectory(
+  androidDir: string
+): string | null {
+  const gradlew = path.join(
+    androidDir,
+    process.platform === 'win32' ? 'gradlew.bat' : 'gradlew'
+  );
+  if (!fs.existsSync(gradlew)) {
+    return null;
+  }
+
+  try {
+    const result = spawnSync(
+      gradlew,
+      [':app:rnCoveragePrintAppBuildDir', '-q', '--no-daemon'],
+      {
+        cwd: androidDir,
+        encoding: 'utf8',
+        shell: true,
+        env: process.env,
+        timeout: GRADLE_APP_BUILD_DIR_QUERY_TIMEOUT_MS,
+      }
+    );
+    if (result.error || result.status !== 0) {
+      return null;
+    }
+    const lines = String(result.stdout ?? '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const buildDir = lines[lines.length - 1];
+    if (!buildDir || !path.isAbsolute(buildDir)) {
+      return null;
+    }
+    return buildDir;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Pull Android Emma/Jacoco `.ec` from the device into `outputDir`.
  * Ported from RNFB tests/scripts/pull-native-coverage.js with config injection.
@@ -72,11 +165,10 @@ export function pullAndroidCoverage(
 ): string | null {
   const config = options.config ?? DEFAULT_COVERAGE_CONFIG;
   const softFail = options.softFail ?? false;
-  // Default under app/build so subsequent `jacocoTestReport` finds the .ec
-  // (fileTree(project.buildDir)). Artifacts/ dirs alone leave the task SKIPPED.
+  // Default under the app layout.buildDirectory so subsequent `jacocoTestReport`
+  // finds the .ec (fileTree over that root). Artifacts/ dirs alone leave the task SKIPPED.
   const localDestDir =
-    options.outputDir ??
-    path.resolve(process.cwd(), 'android/app/build/outputs/code_coverage');
+    options.outputDir ?? resolveAndroidCoveragePullDir({ config });
   const localDestFile = path.join(localDestDir, 'emulator_coverage.ec');
   const staging = config.android.detoxStagingPath;
   const adb = getAdbBinary();
