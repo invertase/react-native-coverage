@@ -1,0 +1,2 @@
+// Minimal multi-project fixture: redirected layout.buildDirectory + real jacoco helper.
+ext.coverageLibraryProjectMatchers = ['coverage-fixture']

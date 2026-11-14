@@ -65,6 +65,7 @@ These keys sit under `android` in the config file.
 | `coverageRelativePath` | `'files/coverage.ec'` | `.ec` path under the app's files folder on the device |
 | `detoxStagingPath` | `'/data/local/tmp/coverage/coverage.ec'` | Staging path on the device that `run-as … cat` writes to before `adb pull`. `android pull` creates the parent folder. |
 | `jacocoReportXml` | `'…/jacocoTestReport.xml'` | JaCoCo XML written by `android report`. Full default: `android/app/build/reports/jacoco/` `jacocoTestReport/jacocoTestReport.xml`. |
+| `coveragePullDir` | `''` | Host directory for `android pull` when `--output` is omitted. Empty → query `:app:rnCoveragePrintAppBuildDir` and use `<buildDir>/outputs/code_coverage`, else `android/app/build/outputs/code_coverage`. |
 
 ## JavaScript
 

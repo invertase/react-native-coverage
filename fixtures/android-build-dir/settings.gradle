@@ -1,0 +1,3 @@
+rootProject.name = 'rn-coverage-build-dir-fixture'
+include ':app'
+include ':coverage-fixture-lib'

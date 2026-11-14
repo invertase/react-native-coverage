@@ -13,9 +13,9 @@ Resolve the underlying coverage gap first (use the headings below), then run `as
 
 ## The JaCoCo report is empty
 
-The `.ec` file was pulled to a folder outside the app `buildDir`. JaCoCo's `executionData` is a `fileTree` over `project.buildDir` plus the matched libraries, so `:app:jacocoTestReport` runs with no data and Gradle skips it.
+The `.ec` file was pulled to a folder outside the app build directory. JaCoCo's `executionData` is a `fileTree` over the app's `layout.buildDirectory` plus matched library layout roots, so `:app:jacocoTestReport` runs with no data and Gradle skips it.
 
-To resolve it, use `rn-coverage android pull`, which stages the `emulator_coverage.ec` file under the `android/app/build/` directory. If you pull by hand, put the file under the app `buildDir`, for example the `android/app/build/outputs/code_coverage/` directory. For pull and report, see [Android](/integration/android).
+To resolve it, use `rn-coverage android pull`, which stages the `emulator_coverage.ec` file under the app's effective build directory (`layout.buildDirectory` / `outputs/code_coverage`, including redirected build dirs). If you pull by hand, put the file under that same root, for example `android/app/build/outputs/code_coverage/` when the build directory is not redirected. For pull and report, see [Android](/integration/android).
 
 ## JavaScript report is missing a workspace library
 

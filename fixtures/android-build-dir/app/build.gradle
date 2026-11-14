@@ -1,0 +1,4 @@
+layout.buildDirectory.set(file("${rootDir}/.redirected-build/app"))
+
+def rnCoverageJacoco = new File(rootDir, '../../android/rn-coverage-jacoco.gradle')
+apply from: rnCoverageJacoco

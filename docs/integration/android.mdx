@@ -71,6 +71,8 @@ These two helpers wire JaCoCo into the library and app projects.
 | `android/rn-coverage.gradle` | Enables JaCoCo and `enableAndroidTestCoverage` on every library project that matches `coverageLibraryProjectMatchers` |
 | `android/rn-coverage-jacoco.gradle` | Adds the `jacocoTestReport` task and the unit and end-to-end report variants |
 
+JaCoCo class directories and execution-data trees resolve from each project's `layout.buildDirectory` (not a hard-coded `projectDir/build`). Class trees walk every AGP variant under `intermediates/javac/<variant>/…/classes` and `tmp/kotlin-classes/<variant>` (debug, release, and flavored variants when present). If you redirect a library's Gradle build directory so two Android builds in one checkout do not collide, the report helper still finds the classes and `.ec` / `.exec` files under that redirected root.
+
 ## Pull and report
 
 When the suite ends, `Coverage.flush()` calls Emma's `RT.dumpCoverageData` and writes `filesDir/coverage.ec`. On the host, stage the `.ec` file, write the JaCoCo XML, and assert matched hits:
@@ -81,7 +83,7 @@ rn-coverage android report   # runs jacocoTestReport and writes the XML
 rn-coverage assert           # exits 2 when the XML has no matched LINE hits
 ```
 
-`rn-coverage android pull` creates the staging directories and lands `emulator_coverage.ec` under the app `buildDir`. JaCoCo's `executionData` is a `fileTree` over `project.buildDir` plus the matched libraries, so a file pulled only into `artifacts/` leaves `:app:jacocoTestReport` skipped with empty data.
+`rn-coverage android pull` creates the staging directories and lands `emulator_coverage.ec` under the app build directory (`<layout.buildDirectory>/outputs/code_coverage` by default). When `--output` is omitted, the CLI queries `:app:rnCoveragePrintAppBuildDir` so a redirected app build directory still stages inside JaCoCo's `fileTree`; set `android.coveragePullDir` to override. A file pulled only into `artifacts/` leaves `:app:jacocoTestReport` skipped with empty data.
 
 JaCoCo XML package names use slashes, `com/foo`. The `assert` matchers accept dots, `com.foo`, or slashes.
 

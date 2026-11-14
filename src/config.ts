@@ -73,6 +73,12 @@ export type CoverageConfig = {
     coverageRelativePath: string;
     /** Relative path to jacocoTestReport.xml after `android report`. */
     jacocoReportXml: string;
+    /**
+     * Host directory for `android pull` when `--output` is omitted.
+     * Empty (default) → query `:app:rnCoveragePrintAppBuildDir` and use
+     * `<buildDir>/outputs/code_coverage`, else `android/app/build/outputs/code_coverage`.
+     */
+    coveragePullDir: string;
   };
   /**
    * Istanbul / NYC (TypeScript via source maps). Written by TurboModule
@@ -112,6 +118,7 @@ export const DEFAULT_COVERAGE_CONFIG: CoverageConfig = {
     coverageRelativePath: 'files/coverage.ec',
     jacocoReportXml:
       'android/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml',
+    coveragePullDir: '',
   },
   js: {
     androidRelativePath: 'files/coverage-final.json',
