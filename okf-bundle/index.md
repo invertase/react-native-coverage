@@ -9,6 +9,7 @@ validating changes to `react-native-coverage`.
 - [Validation checklist](testing/validation-checklist.md)
 - [Running e2e](testing/running-e2e.md)
 - [Coverage design](testing/coverage-design.md)
+- [Releasing](releasing.md)
 
 The library is at the repository root. Dedicated test harnesses live in
 `example/` (Expo/static), `example-dynamic/` (bare/dynamic), and `e2e/`

@@ -93,14 +93,26 @@ yarn release:dry-run
 
 Do **not** run a real publish until human bootstrap + OIDC Trusted Publisher setup are complete.
 
-1. Ensure `main` is green.
-2. GitHub → **Actions** → **Release** → **Run workflow** (branch `main`).
-3. The workflow polls the CI workflow for the exact release dispatch SHA. It
-   proceeds only when that run is completed successfully; another commit's
-   green run is never accepted. Failure, cancellation, or the bounded timeout
-   stops before semantic-release.
-4. Confirm the run created a GitHub Release + npm version with provenance.
-5. If nothing published: semantic-release found no releasable commits since the last tag (expected when only `chore`/`docs` landed).
+Merging to `main` does not publish. `semantic-release` only considers `main`. After the merge, CI starts on that new commit. One dispatch releases it. The workflow waits for CI on that same SHA, then publishes without further input.
+
+```sh
+gh workflow run release.yml --repo invertase/react-native-coverage --ref main
+```
+
+The same dispatch is **Actions** → **Release** → **Run workflow** on `main`.
+
+What the workflow does after that:
+
+1. Check out `main` with the `GH_TOKEN` repo secret.
+2. Build with `yarn prepare`.
+3. Poll CI for this dispatch SHA (`scripts/ci/wait-for-ci.sh`, up to 120 minutes). A green run of a different commit is rejected. Failure, cancellation, or timeout stops before semantic-release.
+4. Run semantic-release: npm publish with OIDC provenance (no `NPM_TOKEN`), GitHub Release, then commit `package.json` and `CHANGELOG.md` back to `main` with `[skip ci]` and tag that commit.
+
+```sh
+gh run list --repo invertase/react-native-coverage --workflow release.yml --limit 1
+```
+
+If the run succeeds and nothing was published, semantic-release found no releasable commits since the last tag. `fix` and `feat` publish. `chore` and `docs` do not.
 
 ## First human publish and OIDC setup (do not do via this workflow alone)
 
