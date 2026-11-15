@@ -17,6 +17,11 @@ import {
   resolveAndroidDeviceId,
   runJacocoTestReport,
 } from '../pull-native-coverage';
+import {
+  DEFAULT_ANDROID_COVERAGE_PULL_DIR as nodeDefaultAndroidCoveragePullDir,
+  queryGradleAppBuildDirectory as nodeQueryGradleAppBuildDirectory,
+  resolveAndroidCoveragePullDir as nodeResolveAndroidCoveragePullDir,
+} from '../node';
 
 jest.mock('node:child_process', () => {
   const actual = jest.requireActual('node:child_process');
@@ -96,6 +101,29 @@ describe('resolveAndroidCoveragePullDir', () => {
     });
     expect(dir).toBe(path.resolve('/repo', DEFAULT_ANDROID_COVERAGE_PULL_DIR));
   });
+
+  it('uses the default Gradle query when queryAppBuildDir is omitted', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-pull-dir-default-'));
+    const androidDir = path.join(tmp, 'custom-android');
+    fs.mkdirSync(androidDir);
+    const previous = process.cwd();
+    process.chdir(tmp);
+    try {
+      expect(resolveAndroidCoveragePullDir()).toBe(
+        path.resolve(process.cwd(), DEFAULT_ANDROID_COVERAGE_PULL_DIR)
+      );
+      expect(
+        resolveAndroidCoveragePullDir({
+          cwd: tmp,
+          androidDir,
+          config: resolveCoverageConfig(),
+        })
+      ).toBe(path.resolve(tmp, DEFAULT_ANDROID_COVERAGE_PULL_DIR));
+      expect(mockedSpawnSync).not.toHaveBeenCalled();
+    } finally {
+      process.chdir(previous);
+    }
+  });
 });
 
 describe('queryGradleAppBuildDirectory', () => {
@@ -151,6 +179,79 @@ describe('queryGradleAppBuildDirectory', () => {
 
     expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
   });
+
+  it('returns null when gradlew is missing', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-missing-'));
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
+    expect(mockedSpawnSync).not.toHaveBeenCalled();
+  });
+
+  it('returns null when Gradle exits non-zero', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-status-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    fs.writeFileSync(path.join(tmp, gradlewName), '');
+
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      signal: null,
+      output: [],
+      pid: 1,
+      stdout: '/redirected/app/build\n',
+      stderr: 'task failed',
+    } as ReturnType<typeof spawnSync>);
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
+  });
+
+  it('returns null when the last stdout line is not absolute', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-relative-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    fs.writeFileSync(path.join(tmp, gradlewName), '');
+
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      signal: null,
+      output: [],
+      pid: 1,
+      stdout: '/ignored/absolute\napp/build\n',
+      stderr: '',
+    } as ReturnType<typeof spawnSync>);
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
+  });
+
+  it('returns null when stdout has no path', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-empty-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    fs.writeFileSync(path.join(tmp, gradlewName), '');
+
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      signal: null,
+      output: [],
+      pid: 1,
+      stdout: undefined,
+      stderr: '',
+    } as unknown as ReturnType<typeof spawnSync>);
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
+  });
+
+  it('returns null when spawnSync throws', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-gradle-throw-'));
+    const gradlewName =
+      process.platform === 'win32' ? 'gradlew.bat' : 'gradlew';
+    fs.writeFileSync(path.join(tmp, gradlewName), '');
+
+    mockedSpawnSync.mockImplementation(() => {
+      throw new Error('spawn failed');
+    });
+
+    expect(queryGradleAppBuildDirectory(tmp)).toBeNull();
+  });
 });
 
 describe('pullAndroidCoverage', () => {
@@ -189,6 +290,49 @@ describe('pullAndroidCoverage', () => {
     expect(result).toBe(path.join(tmp, 'emulator_coverage.ec'));
     expect(fs.existsSync(result!)).toBe(true);
     expect(cmds.some((c) => c.includes('mkdir -p'))).toBe(true);
+  });
+
+  it('resolves the pull dir when outputDir is omitted', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rnc-pull-omit-out-'));
+    const previous = process.cwd();
+    process.chdir(tmp);
+    try {
+      const destDir = path.resolve(
+        process.cwd(),
+        DEFAULT_ANDROID_COVERAGE_PULL_DIR
+      );
+      const cmds: string[] = [];
+      mockedExecSync.mockImplementation((cmd: string) => {
+        const command = String(cmd);
+        cmds.push(command);
+        if (command.includes('pull')) {
+          fs.writeFileSync(path.join(destDir, 'emulator_coverage.ec'), 'ec');
+        }
+        return '';
+      });
+      const result = pullAndroidCoverage('emulator-5554', {
+        softFail: false,
+        config: resolveCoverageConfig(),
+      });
+      expect(result).toBe(path.join(destDir, 'emulator_coverage.ec'));
+      expect(fs.existsSync(result!)).toBe(true);
+      expect(mockedSpawnSync).not.toHaveBeenCalled();
+      expect(cmds.some((c) => c.includes('mkdir -p'))).toBe(true);
+    } finally {
+      process.chdir(previous);
+    }
+  });
+});
+
+describe('node entry re-exports', () => {
+  it('re-exports the Android pull-dir helpers', () => {
+    expect(nodeDefaultAndroidCoveragePullDir).toBe(
+      DEFAULT_ANDROID_COVERAGE_PULL_DIR
+    );
+    expect(nodeQueryGradleAppBuildDirectory).toBe(queryGradleAppBuildDirectory);
+    expect(nodeResolveAndroidCoveragePullDir).toBe(
+      resolveAndroidCoveragePullDir
+    );
   });
 });
 
