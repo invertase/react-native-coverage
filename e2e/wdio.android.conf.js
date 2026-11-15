@@ -2,6 +2,8 @@ const { androidCapabilities } = require('./helpers');
 
 exports.config = {
   runner: 'local',
+  // Linux CI's xvfb-run wrapper breaks worker IPC on Node 24 (`write EINVAL`); Android does not need it.
+  autoXvfb: false,
   specs: ['./specs/fixture-hit.e2e.js'],
   maxInstances: 1,
   capabilities: [androidCapabilities()],
