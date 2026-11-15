@@ -1,3 +1,10 @@
+## [0.2.3](https://github.com/invertase/react-native-coverage/compare/v0.2.2...v0.2.3) (2026-11-15)
+
+### Bug Fixes
+
+* fork the Android WDIO worker instead of xvfb-run ([e04366b](https://github.com/invertase/react-native-coverage/commit/e04366b0c3bd0244cd4dd4177eafd1a321ad868f))
+* resolve Jacoco trees via layout.buildDirectory ([43aa735](https://github.com/invertase/react-native-coverage/commit/43aa7355ffd5545100df075934e6816ccd677e4b))
+
 ## [0.2.2](https://github.com/invertase/react-native-coverage/compare/v0.2.1...v0.2.2) (2026-09-24)
 
 ### Bug Fixes
