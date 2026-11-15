@@ -89,7 +89,7 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "nyc": "^17.1.0"
+    "nyc": "^18.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
