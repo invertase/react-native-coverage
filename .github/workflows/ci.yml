@@ -53,9 +53,6 @@ jobs:
       - name: JS coverage instrumentation scope
         run: node scripts/ci/assert-istanbul-scope.js
 
-      - name: Check Expo dependency compatibility
-        run: yarn workspace react-native-coverage-example exec expo install --check
-
       - name: Dependabot Codecov notice
         if: github.actor == 'dependabot[bot]'
         run: echo '## ⚠️ Codecov upload errors are nonblocking for Dependabot only' >> "$GITHUB_STEP_SUMMARY"

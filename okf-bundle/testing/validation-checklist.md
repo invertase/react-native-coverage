@@ -5,8 +5,10 @@
 - Relevant tests pass; use `yarn test:coverage` for final unit evidence.
 - `yarn typecheck` and `yarn lint` pass.
 - `node bin/rn-coverage.js --help` exits successfully.
-- `yarn workspace react-native-coverage-example exec expo install --check`
-  reports no dependency drift after Expo changes.
+- After changing Expo dependencies, manually run
+  `yarn workspace react-native-coverage-example exec expo install --check`
+  and confirm it reports no drift. CI does not run this check, so a newly
+  published Expo patch does not fail CI.
 - Shell scripts pass `bash -n`.
 - After Gemfile changes, `BUNDLE_FROZEN=true bundle check` succeeds and `json`
   stays at `2.21.2` (`quirks_mode` still required by CocoaPods / Expo autolinking).
