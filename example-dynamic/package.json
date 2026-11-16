@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "coverage-fixture": "workspace:*",
-    "react": "19.2.3",
+    "react": "19.3.1",
     "react-native": "0.86.3",
     "react-native-coverage": "workspace:*"
   },
