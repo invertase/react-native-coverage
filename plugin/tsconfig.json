@@ -8,10 +8,11 @@
     "jsx": "react-jsx",
     "lib": ["ESNext"],
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
+    "types": ["node"],
     "noEmit": false
   },
   "include": ["src"]

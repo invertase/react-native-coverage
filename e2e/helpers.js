@@ -48,7 +48,7 @@ function iosCapabilities() {
       process.env.IOS_WDA_LAUNCH_TIMEOUT || 240000
     ),
     // Headless simctl boot + Appium UI restart hung at 120s on GHA; give the
-    // post-open Simulator.app boot path room (matches RNFB-style long wait).
+    // post-open simulator UI boot path room (matches RNFB-style long wait).
     'appium:simulatorStartupTimeout': 300000,
   };
 

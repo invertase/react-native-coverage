@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Expo SDK 57 requires Xcode 26.4+; macos-26 + latest-stable matches RNFB iOS e2e style.
+  # Expo SDK 58 requires Xcode 26.4+; macos-26 + latest-stable matches RNFB iOS e2e style.
   XCODE_VERSION: latest-stable
   # Xcode 26.6 / macos-26 ships iPhone 17* devices (no plain iPhone 16). Matches RNFB.
   IOS_DEVICE_NAME: iPhone 17
