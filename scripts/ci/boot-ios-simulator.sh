@@ -3,8 +3,10 @@
 # Prefer a non-RNFB-slotted device name. Does not claim RNFB e2e slots.
 #
 # Style mirrors RNFB `.github/workflows/scripts/boot-simulator.sh`:
-# exact device-name match, open Simulator.app, poll bootstatus until ready
+# exact device-name match, open the simulator UI, poll bootstatus until ready
 # (including first-boot data migration).
+# Xcode 26 ships Simulator.app. Xcode 27+ ships Device Hub and does not
+# include Simulator.app.
 set -euo pipefail
 
 DEVICE_NAME="${IOS_DEVICE_NAME:-iPhone 17}"
@@ -128,15 +130,39 @@ if [[ "${state}" != "Booted" ]]; then
 fi
 
 # Appium XCUITest restarts a headless-booted sim to show the UI and can hang
-# for 120s+. Open Simulator.app first (RNFB pattern).
-log_boot_status "phase=foreground_simulator opening Simulator.app..."
-open -a Simulator --args -CurrentDeviceUDID "$udid" || open -a Simulator.app || true
+# for 120s+. Open the simulator UI first (RNFB pattern).
+foreground_simulator_ui() {
+  local device_udid="$1"
+  local xcode_major=""
+
+  # Read the full `xcodebuild -version` output before parsing. An awk `exit`
+  # closes the pipe early, and `pipefail` then turns that SIGPIPE into 141.
+  local xcode_version_text=""
+  xcode_version_text="$(xcodebuild -version 2>/dev/null || true)"
+  xcode_major="$(
+    printf '%s\n' "$xcode_version_text" \
+      | awk '/^Xcode / { split($2, parts, "."); print parts[1] }'
+  )"
+
+  if [[ -n "$xcode_major" && "$xcode_major" -ge 27 ]]; then
+    log_boot_status "phase=foreground_simulator opening Device Hub (Xcode ${xcode_major})..."
+    open -a "Device Hub" --args -CurrentDeviceUDID "$device_udid" \
+      || open -b com.apple.dt.Devices --args -CurrentDeviceUDID "$device_udid" \
+      || true
+    return 0
+  fi
+
+  log_boot_status "phase=foreground_simulator opening Simulator.app (Xcode ${xcode_major:-unknown})..."
+  open -a Simulator --args -CurrentDeviceUDID "$device_udid" || open -a Simulator.app || true
+}
+
+foreground_simulator_ui "$udid"
 
 if ! wait_for_simulator_ready "$DEVICE_NAME"; then
   echo "--- diagnostics after boot timeout ---" >&2
   xcrun simctl list devices booted >&2 || true
   xcrun simctl bootstatus "$udid" >&2 || true
-  pgrep -lf Simulator >&2 || true
+  pgrep -lf 'Simulator|DeviceHub|DevicesTrampoline' >&2 || true
   exit 1
 fi
 

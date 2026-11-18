@@ -19,9 +19,9 @@ The CI scripts are under `scripts/ci/` and the WebDriverIO specs under `e2e/` in
 
 ## iOS: Xcode and the simulator
 
-- Use the `macos-26` runner with `maxim-lobanov/setup-xcode` at `latest-stable`. Expo SDK 57 needs Xcode 26.4 or later.
+- Use the `macos-26` runner with `maxim-lobanov/setup-xcode` at `latest-stable`. Expo SDK 58 needs Xcode 26.4 or later.
 - Name the simulator `iPhone 17`. Xcode 26.6 images do not ship a plain `iPhone 16`, and a wrong name fails the destination lookup.
-- Boot with an exact-name match, open `Simulator.app`, then poll `bootstatus`. A headless `simctl boot` followed by an Appium restart hung at the WebDriverAgent timeout on GitHub Actions. See the `scripts/ci/boot-ios-simulator.sh` script.
+- Boot with an exact-name match, open the simulator UI, then poll `bootstatus`. On Xcode 26 that app is `Simulator.app`. On Xcode 27 and later it is Device Hub (bundle id `com.apple.dt.Devices`); those Xcode installs do not include `Simulator.app`. A headless `simctl boot` followed by an Appium restart hung at the WebDriverAgent timeout on GitHub Actions. See the `scripts/ci/boot-ios-simulator.sh` script.
 - Set `simulatorStartupTimeout` to 300 seconds or more, and set the WebDriverAgent and session timeouts above the three to five minutes a cold WebDriverAgent build takes.
 - Run `xcrun simctl list` once before the run.
 - After `/status` is ready, prefetch the Metro bundle. Prebuild WebDriverAgent once under `artifacts/e2e/wda-derived-data` and pass it to the driver with `usePrebuiltWDA` and `derivedDataPath`. Do not put `DerivedData` in `e2e/node_modules`.
