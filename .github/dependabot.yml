@@ -4,8 +4,6 @@ updates:
   - package-ecosystem: 'npm'
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
-    allow:
-      - dependency-type: 'production'
     # Check the npm registry for updates every day (weekdays)
     schedule:
       interval: 'daily'
@@ -16,6 +14,25 @@ updates:
       semver-patch-days: 7
     labels:
       - 'dependencies'
+    groups:
+      npm-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+        # Pinned React Native and Expo packages stay as individual PRs so one
+        # pinned package cannot turn the whole group red.
+        exclude-patterns:
+          - 'react'
+          - '@types/react'
+          - 'react-native'
+          - 'react-native-*'
+          - '@react-native/*'
+          - '@react-native-community/*'
+          - '@react-native-async-storage/*'
+          - '@react-native-firebase/*'
+          - 'expo'
+          - 'expo-*'
+          - 'babel-preset-expo'
 
   - package-ecosystem: 'github-actions'
     # Workflow files stored in the
@@ -27,6 +44,11 @@ updates:
       default-days: 7
     labels:
       - 'dependencies'
+    groups:
+      github-actions-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
   # Root Gemfile (CocoaPods, xcodeproj)
   - package-ecosystem: 'bundler'
@@ -40,3 +62,8 @@ updates:
       semver-patch-days: 7
     labels:
       - 'dependencies'
+    groups:
+      bundler-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
