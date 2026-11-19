@@ -19,8 +19,35 @@ env:
   IOS_DEVICE_NAME: iPhone 17
 
 jobs:
+  route-linux:
+    uses: ./.github/workflows/mellifera-route.yml
+    secrets:
+      MELLIFERA_PLACEMENT_TOKEN: ${{ secrets.MELLIFERA_PLACEMENT_TOKEN }}
+    with:
+      class: other
+      default-runs-on: ubuntu-latest
+  route-ios-dynamic:
+    needs: unit
+    if: ${{ needs.unit.result == 'success' }}
+    uses: ./.github/workflows/mellifera-route.yml
+    secrets:
+      MELLIFERA_PLACEMENT_TOKEN: ${{ secrets.MELLIFERA_PLACEMENT_TOKEN }}
+    with:
+      class: macos
+      default-runs-on: macos-26
+  route-nested:
+    needs: unit
+    if: ${{ needs.unit.result == 'success' }}
+    uses: ./.github/workflows/mellifera-route.yml
+    secrets:
+      MELLIFERA_PLACEMENT_TOKEN: ${{ secrets.MELLIFERA_PLACEMENT_TOKEN }}
+    with:
+      class: other
+      default-runs-on: ubuntu-latest
+      overflow-runs-on: linux-nested-virt-self-hosted
   unit:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.route-linux.outputs.runs-on) }}
+    needs: route-linux
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
@@ -72,8 +99,8 @@ jobs:
   # non-zero fixture LCOV. Expo cannot host this cell (React-Core force-static).
   e2e-ios-dynamic:
     name: e2e / iOS dynamic (primary)
-    runs-on: macos-26
-    needs: unit
+    runs-on: ${{ fromJSON(needs.route-ios-dynamic.outputs.runs-on) }}
+    needs: [unit, route-ios-dynamic]
     timeout-minutes: 90
     env:
       CELL: dynamic
@@ -145,10 +172,19 @@ jobs:
           fail_ci_if_error: ${{ github.actor != 'dependabot[bot]' }}
 
   # Expo example: staticlib merge (honest static cell). Still asserts fixture hits.
+  route-ios-static:
+    needs: unit
+    if: ${{ needs.unit.result == 'success' }}
+    uses: ./.github/workflows/mellifera-route.yml
+    secrets:
+      MELLIFERA_PLACEMENT_TOKEN: ${{ secrets.MELLIFERA_PLACEMENT_TOKEN }}
+    with:
+      class: macos
+      default-runs-on: macos-26
   e2e-ios-static:
     name: e2e / iOS static (Expo)
-    runs-on: macos-26
-    needs: unit
+    runs-on: ${{ fromJSON(needs.route-ios-static.outputs.runs-on) }}
+    needs: [unit, route-ios-static]
     timeout-minutes: 90
     env:
       CELL: static
@@ -224,8 +260,8 @@ jobs:
 
   e2e-android:
     name: e2e / Android (Expo)
-    runs-on: ubuntu-latest
-    needs: unit
+    runs-on: ${{ fromJSON(needs.route-nested.outputs.runs-on) }}
+    needs: [unit, route-nested]
     timeout-minutes: 90
     steps:
       - name: Checkout
