@@ -7,7 +7,7 @@
     "coverage-fixture": "workspace:*",
     "expo": "~58.0.26",
     "expo-status-bar": "~58.0.5",
-    "react": "19.3.0",
+    "react": "19.3.1",
     "react-native": "0.88.1",
     "react-native-coverage": "*"
   },
