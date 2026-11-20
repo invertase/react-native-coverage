@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload unit coverage (Codecov)
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/unit/lcov.info
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/dynamic/lcov.info,artifacts/e2e/coverage/dynamic/js/lcov.info
@@ -249,7 +249,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/static/lcov.info,artifacts/e2e/coverage/static/js/lcov.info
@@ -314,7 +314,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/android/jacocoTestReport.xml,artifacts/e2e/coverage/android/js/lcov.info
