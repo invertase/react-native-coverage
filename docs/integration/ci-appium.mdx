@@ -25,6 +25,7 @@ The CI scripts are under `scripts/ci/` and the WebDriverIO specs under `e2e/` in
 - Set `simulatorStartupTimeout` to 300 seconds or more, and set the WebDriverAgent and session timeouts above the three to five minutes a cold WebDriverAgent build takes.
 - Run `xcrun simctl list` once before the run.
 - After `/status` is ready, prefetch the Metro bundle. Prebuild WebDriverAgent once under `artifacts/e2e/wda-derived-data` and pass it to the driver with `usePrebuiltWDA` and `derivedDataPath`. Do not put `DerivedData` in `e2e/node_modules`.
+- WDA prebuild sets the simulator deployment target to 15.1 so vendored WebDriverAgent builds on current Xcode simulator SDKs (Xcode 26 and 27).
 - Do not use `usePreinstalledWDA` on a simulator. It launches the `.xctrunner` app with plain `simctl`, which exits at `domain:dyld(6) code:1` because `simctl` never injects the XCTest frameworks. Appium then polls `127.0.0.1:8100/status` until `wdaLaunchTimeout`. A readiness watchdog, `IOS_WDA_READY_DEADLINE` with a default of 180 seconds, aborts the attempt when the port is dead.
 - Use two or three serialized outer WebDriverIO attempts with `connectionRetryCount: 0`. Between attempts, delete sessions, terminate and reinstall the app, stop Appium, clear the Appium and WebDriverAgent ports, and reuse the prebuilt WebDriverAgent. Never overlap `POST /session`.
 - Keep `noReset: false`, `enforceAppInstall: true`, and `forceAppLaunch: true`, and do not launch the app with `simctl launch` first.
