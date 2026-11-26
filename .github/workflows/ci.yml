@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload unit coverage (Codecov)
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/unit/lcov.info
@@ -129,7 +129,7 @@ jobs:
 
       - name: Setup Ruby
         # https://github.com/ruby/setup-ruby/releases
-        uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
         with:
           ruby-version: '3.3'
 
@@ -148,7 +148,7 @@ jobs:
       - name: Upload coverage artifacts
         if: always()
         # https://github.com/actions/upload-artifact/releases
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-ios-dynamic
           path: |
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/dynamic/lcov.info,artifacts/e2e/coverage/dynamic/js/lcov.info
@@ -203,7 +203,7 @@ jobs:
 
       - name: Setup Ruby
         # https://github.com/ruby/setup-ruby/releases
-        uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
         with:
           ruby-version: '3.3'
 
@@ -235,7 +235,7 @@ jobs:
       - name: Upload coverage artifacts
         if: always()
         # https://github.com/actions/upload-artifact/releases
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-ios-static
           path: |
@@ -249,7 +249,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/static/lcov.info,artifacts/e2e/coverage/static/js/lcov.info
@@ -273,7 +273,7 @@ jobs:
 
       - name: Setup Java
         # https://github.com/actions/setup-java/releases
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 17
@@ -300,7 +300,7 @@ jobs:
       - name: Upload coverage artifacts
         if: always()
         # https://github.com/actions/upload-artifact/releases
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-android
           path: |
@@ -314,7 +314,7 @@ jobs:
 
       - name: Upload to Codecov
         # https://github.com/codecov/codecov-action/releases
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/e2e/coverage/android/jacocoTestReport.xml,artifacts/e2e/coverage/android/js/lcov.info
