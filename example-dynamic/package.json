@@ -16,7 +16,7 @@
     "react-native-coverage": "workspace:*"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.13",
+    "@babel/core": "^8.1.2",
     "@babel/preset-env": "^7.29.14",
     "@babel/runtime": "^7.29.14",
     "@react-native-community/cli": "21.0.0",
