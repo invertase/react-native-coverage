@@ -7,6 +7,7 @@
 #   IOS_DEVICE_NAME (default iPhone 17)
 #   SKIP_BUILD=1  SKIP_METRO=1  SKIP_APPIUM_INSTALL=1
 #   METRO_PORT / APPIUM_PORT (defaults: Metro 8081 both cells; Appium 4723 dynamic / 4725 static)
+#   WDA_IPHONEOS_DEPLOYMENT_TARGET (default 15.1; always passed to the WDA xcodebuild)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -31,6 +32,9 @@ fi
 export APPIUM_PORT
 export APPIUM_HOST="${APPIUM_HOST:-127.0.0.1}"
 WDA_PORT="${WDA_PORT:-8100}"
+# appium-webdriveragent@17.0.12 sets IPHONEOS_DEPLOYMENT_TARGET to 15.0.
+# Pass 15.1 so the prebuild matches example-dynamic (override via env).
+WDA_IPHONEOS_DEPLOYMENT_TARGET="${WDA_IPHONEOS_DEPLOYMENT_TARGET:-15.1}"
 IOS_E2E_ATTEMPTS="${IOS_E2E_ATTEMPTS:-3}"
 WDA_DERIVED="$REPORT_DIR/wda-derived-data"
 mkdir -p "$WDA_DERIVED"
@@ -349,6 +353,7 @@ run_logged "$LOG_DIR/wda-xcodebuild.log" xcodebuild \
   -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$WDA_DERIVED" \
   CODE_SIGNING_ALLOWED=NO \
+  IPHONEOS_DEPLOYMENT_TARGET="${WDA_IPHONEOS_DEPLOYMENT_TARGET}" \
   build-for-testing
 export IOS_WDA_DERIVED_DATA_PATH="$WDA_DERIVED"
 export IOS_WDA_APP_PATH="$WDA_DERIVED/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app"
